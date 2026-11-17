@@ -1,0 +1,2516 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#070b09">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="משחק מפעיל רחפנים: תקיפה, סיוע לכוחות, חילוץ חטופים וסיור">
+<title>DroneStrike</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{--bg:#070b09;--panel:#0d1411;--panel2:#121c18;--line:#22332b;--line2:#2f4a3d;--txt:#dce8df;--dim:#86998d;--acc:#5ef59a;--acc2:#27b863;--warn:#ffb347;--bad:#ff5a4f;--friend:#5cc2ff;--gold:#ffd166}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;overflow:hidden;overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none}
+#cv{position:fixed;left:0;top:0;width:100%;height:100%;display:block;touch-action:none}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
+.hidden{display:none!important}
+/* ---------- HUD ---------- */
+#hud{position:fixed;inset:0;pointer-events:none;z-index:2}
+#hud .pe,#hud button{pointer-events:auto}
+.hb{background:rgba(6,12,9,.72);border:1px solid var(--line2);border-radius:10px;min-width:48px;height:44px;padding:0 9px;font-size:13px;font-weight:600;color:var(--txt);display:flex;align-items:center;justify-content:center;gap:5px;line-height:1.05;text-align:center}
+.hb:active{transform:scale(.95)}
+.hb.on{border-color:var(--acc);color:var(--acc);background:rgba(20,60,35,.72)}
+.hb.dis{opacity:.42}
+.hb.alert{border-color:var(--bad);color:#fff;animation:pulse .45s infinite alternate}
+@keyframes pulse{from{background:rgba(70,0,0,.6)}to{background:rgba(190,25,25,.85)}}
+#topbar{position:absolute;top:calc(6px + env(safe-area-inset-top));left:calc(6px + env(safe-area-inset-left));right:calc(6px + env(safe-area-inset-right));display:flex;justify-content:space-between;align-items:flex-start;gap:6px}
+#timer{font:700 19px/1 ui-monospace,Menlo,Consolas,monospace;padding:7px 12px;background:rgba(6,12,9,.72);border:1px solid var(--line2);border-radius:10px;min-width:86px;text-align:center;direction:ltr}
+#timer.low{color:var(--bad);border-color:var(--bad)}
+#objBox{position:absolute;top:calc(56px + env(safe-area-inset-top));right:calc(6px + env(safe-area-inset-right));width:min(300px,72vw);background:rgba(6,12,9,.88);border:1px solid var(--line2);border-radius:10px;padding:8px 10px;font-size:12.5px;line-height:1.5;z-index:3}
+#objBox h4{margin:0 0 3px;font-size:12px;color:var(--acc)}
+#objBox .o::before{content:"▢ ";color:var(--dim)}
+#objBox .o.done{color:var(--acc)}#objBox .o.done::before{content:"✔ ";color:var(--acc)}
+#objBox .o.opt{color:#b9c7be}#objBox .o.opt::before{content:"◇ "}
+#objBox .o.opt.done{color:var(--acc)}#objBox .o.opt.done::before{content:"✔ "}
+#objBox .o.fail{color:var(--bad);text-decoration:line-through}#objBox .o.fail::before{content:"✖ "}
+#msgs{position:absolute;top:calc(56px + env(safe-area-inset-top));left:calc(132px + env(safe-area-inset-left));right:calc(6px + env(safe-area-inset-right));display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.msg{background:rgba(6,12,9,.84);border-inline-start:3px solid var(--acc);padding:5px 10px;border-radius:6px;font-size:12.5px;line-height:1.35;transition:opacity .6s}
+@media (min-width:900px) and (min-height:521px){#msgs{left:50%;right:auto;transform:translateX(-50%);width:min(480px,46vw);top:calc(98px + env(safe-area-inset-top));align-items:center}.msg{font-size:13px;text-align:center}}
+.msg.warn{border-color:var(--warn)}.msg.bad{border-color:var(--bad);color:#ffd6d3}.msg.friend{border-color:var(--friend);color:#d5eeff}.msg.good{border-color:var(--acc);color:#d4ffe4}
+#mini{position:absolute;left:calc(6px + env(safe-area-inset-left));top:calc(56px + env(safe-area-inset-top));width:118px;height:118px;border:1px solid var(--line2);border-radius:8px;background:#000}
+#leftCol{position:absolute;left:calc(6px + env(safe-area-inset-left));top:calc(182px + env(safe-area-inset-top));display:flex;flex-direction:column;gap:6px}
+#rightCol{position:absolute;right:calc(6px + env(safe-area-inset-right));bottom:calc(104px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+#weapRow{position:absolute;bottom:calc(8px + env(safe-area-inset-bottom));left:calc(6px + env(safe-area-inset-left));right:104px;display:flex;gap:6px;flex-wrap:wrap-reverse;direction:ltr}
+.wb{flex-direction:column;gap:2px;height:52px;min-width:64px}
+.wb small{font-size:11px;font-weight:500;color:var(--dim)}
+.wb.on small{color:var(--acc)}
+#fireBtn{position:absolute;right:calc(12px + env(safe-area-inset-right));bottom:calc(12px + env(safe-area-inset-bottom));width:82px;height:82px;border-radius:50%;background:rgba(110,8,8,.6);border:2px solid var(--bad);color:#fff;font-weight:800;font-size:18px;letter-spacing:1px}
+#fireBtn.held{background:rgba(220,30,30,.85)}
+#banner{position:absolute;bottom:calc(150px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:rgba(6,12,9,.88);border:1px solid var(--acc);color:var(--acc);padding:7px 14px;border-radius:8px;font-size:13px;white-space:nowrap}
+@media (max-height:520px){
+  .hb{height:38px;min-width:44px;font-size:12px}
+  .wb{height:44px;min-width:58px}
+  #mini{width:92px;height:92px}
+  #leftCol{top:calc(154px + env(safe-area-inset-top));gap:5px}
+  #rightCol{bottom:calc(92px + env(safe-area-inset-bottom));gap:5px}
+  #weapRow{left:calc(62px + env(safe-area-inset-left))}
+  #fireBtn{width:72px;height:72px}
+  #msgs{top:calc(52px + env(safe-area-inset-top));left:calc(112px + env(safe-area-inset-left));right:auto;transform:none;width:min(420px,calc(100vw - 440px));align-items:flex-start}
+  .msg{font-size:12px;padding:4px 9px;text-align:right}
+  #objBox{top:calc(50px + env(safe-area-inset-top));width:min(290px,38vw);font-size:11.5px;line-height:1.35;padding:6px 9px}
+  #rightCol .hb{height:36px}
+  #banner{bottom:calc(64px + env(safe-area-inset-bottom))}
+}
+/* ---------- מסכים ---------- */
+.screen{position:fixed;inset:0;z-index:5;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:calc(14px + env(safe-area-inset-top)) 14px calc(28px + env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(4,8,6,.5),rgba(4,8,6,.9))}
+.wrap{max-width:1000px;margin:0 auto}
+.logo{font:800 clamp(36px,9vw,70px)/1 ui-monospace,Menlo,Consolas,monospace;letter-spacing:4px;color:var(--acc);text-shadow:0 0 22px rgba(94,245,154,.35);direction:ltr;text-align:center;margin-top:9vh}
+.sub{color:var(--dim);text-align:center;margin:12px 0 30px;font-size:15px}
+.menu{display:flex;flex-direction:column;gap:10px;max-width:320px;margin:0 auto}
+.btn{background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:12px 16px;font-size:15px;font-weight:600;color:var(--txt);text-align:center}
+.btn:hover{border-color:var(--acc2)}
+.btn.pri{background:linear-gradient(180deg,#1f6b41,#145232);border-color:var(--acc2);color:#eafff1}
+.btn.red{background:#4a1412;border-color:#8a2a24}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.sm{padding:7px 12px;font-size:13px;border-radius:8px}
+.hdr{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.hdr .t{font:800 22px/1 ui-monospace,Menlo,Consolas,monospace;color:var(--acc);direction:ltr}
+.chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13.5px}
+.chip b{color:var(--gold)}
+.chip b.neg{color:var(--bad)}
+.tabs{display:flex;gap:6px;margin-bottom:12px;border-bottom:1px solid var(--line);padding-bottom:8px;overflow-x:auto}
+.tab{padding:9px 16px;border-radius:9px;font-weight:700;font-size:14.5px;color:var(--dim);border:1px solid transparent;white-space:nowrap}
+.tab.on{color:var(--acc);border-color:var(--line2);background:var(--panel)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 13px;display:flex;flex-direction:column;gap:7px}
+.card.click{cursor:pointer;transition:border-color .15s}
+.card.click:hover{border-color:var(--acc2)}
+.card h3{margin:0;font-size:16px;display:flex;align-items:center;gap:8px}
+.ic{font-size:18px;color:var(--acc);min-width:32px;height:32px;border:1px solid var(--line2);border-radius:8px;display:inline-flex;align-items:center;justify-content:center}
+.card p{margin:0;color:#b8c7bd;font-size:13.5px;line-height:1.45}
+.tags{display:flex;gap:5px;flex-wrap:wrap}
+.tag{font-size:11.5px;padding:2px 8px;border-radius:999px;background:#0a110e;border:1px solid var(--line);color:var(--dim)}
+.tag.n{color:#a9b8ff}.tag.w{color:var(--warn)}.tag.g{color:var(--acc)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.price{color:var(--gold);font-weight:700}
+.lvl{display:flex;gap:3px}.lvl i{width:16px;height:5px;border-radius:2px;background:#24332b}.lvl i.f{background:var(--acc)}
+.sec{margin:18px 0 8px;font-size:13px;color:var(--acc);letter-spacing:.5px;font-weight:700}
+.modal{position:fixed;inset:0;z-index:8;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:10px;touch-action:pan-y}
+.sheet{background:var(--panel);border:1px solid var(--line2);border-radius:14px;width:min(580px,100%);max-height:100%;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
+.sheet h2{margin:0 0 4px;font-size:20px}
+.sheet .x{float:left;font-size:22px;color:var(--dim);width:34px;height:34px}
+.diffs{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.diff{padding:9px 2px;border-radius:8px;border:1px solid var(--line);background:#0a110e;font-size:12.5px;font-weight:700;color:var(--dim)}
+.diff.on{border-color:var(--acc);color:var(--acc);background:#10261a}
+.stat{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:13.5px;margin:10px 0}
+.stat span{color:var(--dim)}
+.slotRow{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px dashed var(--line)}
+.slotRow .nm{flex:1;font-size:14px}
+.slotRow .nm small{display:block;color:var(--dim);font-size:11.5px}
+.step{display:flex;align-items:center;gap:6px}
+.step button{width:34px;height:34px;border-radius:8px;border:1px solid var(--line2);background:var(--panel2);font-weight:800;font-size:16px}
+.step button:disabled{opacity:.35}
+.step b{min-width:20px;text-align:center}
+.dlist{display:flex;flex-direction:column;gap:6px}
+.dopt{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#0a110e;text-align:right;width:100%}
+.dopt.on{border-color:var(--acc)}
+.dopt small{color:var(--dim)}
+.res{font-size:14px;width:100%;border-collapse:collapse;margin:10px 0}
+.res td{padding:6px 2px;border-bottom:1px dashed var(--line)}
+.res td:last-child{text-align:left;direction:ltr;font-family:ui-monospace,Menlo,monospace;white-space:nowrap}
+.pos{color:var(--acc)}.neg{color:var(--bad)}
+.big{font-size:28px;font-weight:800;margin:6px 0}
+.help p,.help li{font-size:14px;line-height:1.65;color:#c4d2c8}
+.help h3{color:var(--acc);font-size:15px;margin:16px 0 4px}
+.toggle{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px dashed var(--line);font-size:15px}
+.note{font-size:12.5px;color:var(--dim);line-height:1.5}
+#toast{position:fixed;bottom:calc(18px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:20;background:#10261a;border:1px solid var(--acc2);color:#dfffea;padding:9px 16px;border-radius:10px;font-size:14px;transition:opacity .4s;pointer-events:none}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+
+<div id="hud" class="hidden">
+  <div id="topbar">
+    <button class="hb" id="objBtn">יעדים</button>
+    <div id="timer">00:00</div>
+    <button class="hb" id="pauseBtn" aria-label="השהיה">❚❚</button>
+  </div>
+  <div id="objBox" class="pe hidden"></div>
+  <div id="msgs"></div>
+  <canvas id="mini" class="pe" width="240" height="240"></canvas>
+  <div id="leftCol">
+    <button class="hb" id="zIn" aria-label="זום פנימה">＋</button>
+    <button class="hb" id="zOut" aria-label="זום החוצה">－</button>
+    <button class="hb" id="thBtn">תרמי</button>
+    <button class="hb" id="markBtn">סמן</button>
+  </div>
+  <div id="rightCol">
+    <button class="hb" id="flareBtn">נוריות <b id="flareN">0</b></button>
+    <button class="hb" id="altBtn">גובה: נמוך</button>
+    <button class="hb" id="orbitBtn">הזז מסלול</button>
+    <button class="hb" id="airBtn">תקיפת מטוס <b id="airN">0</b></button>
+  </div>
+  <div id="weapRow"></div>
+  <button id="fireBtn">אש</button>
+  <div id="banner" class="hidden"></div>
+</div>
+
+<div id="screen" class="screen"></div>
+<div id="modal" class="modal hidden"></div>
+<div id="toast" class="hidden"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   DroneStrike — משחק מפעיל רחפנים. קובץ יחיד, בלי ספריות ובלי build.
+   ===================================================================== */
+const GAME_NAME = 'DroneStrike';
+const SAVE_KEY = 'dsSave', SET_KEY = 'dsSettings', SAVE_VERSION = 1;
+const WORLD = 1500;          // גודל המפה ביחידות (בערך מטרים)
+const VIEW_UNITS = 640;      // כמה יחידות רואים בצד הקצר של המסך בזום x1
+
+/* ---------- עזרים ---------- */
+const $ = id => document.getElementById(id);
+const TAU = Math.PI * 2;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const lerp = (a, b, t) => a + (b - a) * t;
+const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
+function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+let R = Math.random;
+const rnd = (a = 1, b) => b === undefined ? R() * a : a + R() * (b - a);
+const rint = (a, b) => Math.floor(a + R() * (b - a + 1));
+const pick = a => a[Math.floor(R() * a.length)];
+const chance = p => R() < p;
+const gauss = () => (R() + R() + R() - 1.5) / 1.5;
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function angLerp(a, b, t) { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * clamp(t, 0, 1); }
+function segDist(px, py, ax, ay, bx, by) { const dx = bx - ax, dy = by - ay, L = dx * dx + dy * dy || 1; const t = clamp(((px - ax) * dx + (py - ay) * dy) / L, 0, 1); return { d: Math.hypot(px - ax - dx * t, py - ay - dy * t), t }; }
+function circRect(x, y, r, b) { const cx = clamp(x, b.x, b.x + b.w), cy = clamp(y, b.y, b.y + b.h); return (x - cx) ** 2 + (y - cy) ** 2 <= r * r; }
+const fmtMoney = n => (n < 0 ? '-' : '') + '₪' + Math.abs(Math.round(n)).toLocaleString('en-US');
+const mmss = s => { s = Math.max(0, Math.ceil(s)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function mkCanvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+
+/* ---------- נתוני משחק ---------- */
+// light = מכפיל נזק נגד רכבים ומבנים קלים, bdmg = מכפיל נזק נגד בניינים ומטרות מבוצרות
+const WEAPONS = {
+  grenade: { name: 'רימון מונחה', short: 'רימון', cls: 1, radius: 5, dmg: 110, light: 0.8, bdmg: 0.35, flight: 2.6, spread: 2.2, cd: 0.8, perSlot: 6, price: 0, pack: 0, free: true,
+    desc: 'פצצה קטנה שמוטלת מהרחפן. חינם וללא הגבלה במלאי, אבל לא מדויקת במיוחד.' },
+  gun: { name: 'מקלע 7.62', short: 'מקלע', cls: 2, radius: 1.5, dmg: 42, light: 0.15, bdmg: 0.03, flight: 0.5, spread: 1.5, cd: 0.11, perSlot: 150, price: 90, pack: 150, auto: true,
+    desc: 'אש רציפה נגד חמושים, כמעט בלי נזק סביבתי. מצוין ליד חטופים וכוחות.' },
+  missile: { name: 'טיל נ״ט מונחה', short: 'טיל', cls: 2, radius: 6.5, dmg: 260, light: 1, bdmg: 0.8, flight: 2.2, spread: 0.8, cd: 1.4, perSlot: 2, price: 260, pack: 2, laser: true,
+    desc: 'טיל מדויק נגד רכבים ומשגרים. עם מסמן לייזר הוא ננעל על מטרה בתנועה.' },
+  loiter: { name: 'תחמושת משוטטת', short: 'משוטטת', cls: 1, radius: 4, dmg: 240, light: 1, bdmg: 0.5, flight: 3.4, spread: 0.3, cd: 1.6, perSlot: 2, price: 420, pack: 2, track: true,
+    desc: 'רחפן מתאבד עם מחפש משלו: ננעל על המטרה שבכוונת ורודף אחריה. מדויקת מאוד.' },
+  bomb: { name: 'פצצה מונחית', short: 'פצצה', cls: 3, radius: 17, dmg: 450, light: 1.2, bdmg: 1.6, flight: 4.5, spread: 1.6, cd: 2.5, perSlot: 1, price: 380, pack: 1,
+    desc: 'הרס רחב: מפילה מבנים. מסוכנת לאזרחים ולכוחות שקרובים למטרה.' },
+  bunker: { name: 'פצצה חודרת', short: 'חודרת', cls: 3, radius: 9, dmg: 320, light: 1, bdmg: 4, flight: 4.8, spread: 1.2, cd: 2.5, perSlot: 1, price: 520, pack: 1,
+    desc: 'חודרת לעומק והורסת פירי מנהרות ומחסנים, עם רדיוס פגיעה קטן יחסית.' },
+};
+const WORDER = ['grenade', 'gun', 'missile', 'loiter', 'bomb', 'bunker'];
+
+const DRONES = {
+  wasp: { name: 'צרעה', type: 'רחפן סיור קטן', cls: 1, slots: 2, hp: 60, speed: 30, orbit: 110, sensor: 400, price: 0, repair: 250, stealth: 1,
+    desc: 'רחפן קטן וזריז. נושא רימונים ותחמושת משוטטת.' },
+  hawk: { name: 'בז', type: 'רחפן תקיפה', cls: 2, slots: 3, hp: 100, speed: 36, orbit: 150, sensor: 470, price: 4500, repair: 600, stealth: 1,
+    desc: 'נושא טילים מונחים ומקלע, ועמיד יותר.' },
+  eagle: { name: 'עיט', type: 'מזל״ט כבד', cls: 3, slots: 4, hp: 170, speed: 42, orbit: 190, sensor: 560, price: 12000, repair: 1300, stealth: 1,
+    desc: 'מזל״ט כבד עם פצצות מונחות, ארבע תחנות חימוש וטווח חיישנים ארוך.' },
+  shadow: { name: 'צל', type: 'מזל״ט חמקן', cls: 3, slots: 5, hp: 150, speed: 52, orbit: 200, sensor: 650, price: 26000, repair: 2200, stealth: 0.55, autoFlare: true,
+    desc: 'קשה לגלות ולפגוע בו, נוריות אוטומטיות וחמש תחנות חימוש.' },
+};
+const DORDER = ['wasp', 'hawk', 'eagle', 'shadow'];
+
+const UPGRADES = [
+  { id: 'zoom', cat: 'sensor', name: 'זום אופטי', desc: 'הגדלה מרבית של המצלמה. זום גבוה מאפשר לזהות נשק מגובה.', levels: [{ v: 8 }, { v: 12, price: 1500 }, { v: 20, price: 4500 }], show: v => 'x' + v },
+  { id: 'thermal', cat: 'sensor', name: 'מצלמה תרמית', desc: 'רואים חום: אנשים מתחת לעצים ובלילה. ב־HD רואים גם אנשים בתוך מבנים בבירור. פותח משימות לילה.', levels: [{ v: 0 }, { v: 1, price: 2200 }, { v: 2, price: 4800 }], show: v => ['אין', 'רגילה', 'HD'][v] },
+  { id: 'laser', cat: 'sensor', name: 'מסמן לייזר', desc: 'טילים ננעלים על מטרה בתנועה שבכוונת.', levels: [{ v: 0 }, { v: 1, price: 2600 }], show: v => v ? 'מותקן' : 'אין' },
+  { id: 'ai', cat: 'sensor', name: 'זיהוי אוטומטי', desc: 'מסמן לבד חמושים ורכבי אויב שנמצאים במסך (בזום מספיק).', levels: [{ v: 0 }, { v: 1, price: 5500 }], show: v => v ? 'מותקן' : 'אין' },
+  { id: 'stab', cat: 'sensor', name: 'מייצב ירי', desc: 'מקטין בחצי את הפיזור של כל הנשקים.', levels: [{ v: 1 }, { v: 0.55, price: 1800 }], show: v => v < 1 ? 'מותקן' : 'אין' },
+  { id: 'armor', cat: 'support', name: 'מיגון', desc: 'הרחפן עמיד יותר לפגיעות.', levels: [{ v: 1 }, { v: 1.25, price: 2000 }, { v: 1.5, price: 5000 }], show: v => '+' + Math.round((v - 1) * 100) + '%' },
+  { id: 'flares', cat: 'support', name: 'מטען נוריות', desc: 'נוריות מטעות טילי כתף. יותר נוריות בכל משימה.', levels: [{ v: 3 }, { v: 5, price: 1200 }, { v: 8, price: 3200 }], show: v => v + ' נוריות' },
+  { id: 'maws', cat: 'support', name: 'התרעת טילים', desc: 'התרעה מוקדמת יותר על טיל, והנוריות מטעות כמעט תמיד.', levels: [{ v: 0 }, { v: 1, price: 3000 }], show: v => v ? 'מותקן' : 'אין' },
+  { id: 'ew', cat: 'support', name: 'לוחמה אלקטרונית', desc: 'מקלעי נ״מ מתקשים לפגוע ברחפן.', levels: [{ v: 1 }, { v: 0.5, price: 4500 }], show: v => v < 1 ? 'מותקן' : 'אין' },
+  { id: 'battery', cat: 'support', name: 'סוללה מוגדלת', desc: 'יותר זמן אוויר בכל משימה.', levels: [{ v: 1 }, { v: 1.2, price: 2500 }, { v: 1.4, price: 6000 }], show: v => '+' + Math.round((v - 1) * 100) + '%' },
+  { id: 'engine', cat: 'support', name: 'מנוע משופר', desc: 'הרחפן מגיע מהר יותר למסלול חדש.', levels: [{ v: 1 }, { v: 1.4, price: 2200 }], show: v => v > 1 ? 'מותקן' : 'אין' },
+  { id: 'crew', cat: 'support', name: 'צוות טכני', desc: 'תיקון הרחפן זול ב־40%.', levels: [{ v: 1 }, { v: 0.6, price: 3000 }], show: v => v < 1 ? 'מותקן' : 'אין' },
+];
+const AIRSTRIKE_PRICE = 900;
+
+const MTYPES = {
+  strike: { name: 'תקיפה', icon: '✸', base: 700, desc: 'השמדת משגרים, מחסנים ורכבים חמושים באזור שהמודיעין סימן. מחפשים, מזהים ותוקפים.' },
+  cas: { name: 'סיוע לכוחות', icon: '⛨', base: 820, desc: 'כוח קרקעי מתקדם בציר. אתרו מארבים לפני שהוא נתקל בהם, וחפו עליו כשהוא תחת אש.' },
+  rescue: { name: 'חילוץ חטופים', icon: '⚑', base: 1150, desc: 'אתרו את הבניין שבו מוחזקים החטופים, נטרלו שומרים בלי לפגוע בבניין, וליוו את הכוח למסוק.' },
+  recon: { name: 'סיור ומעקב', icon: '◎', base: 650, desc: 'עקבו אחרי רכב חשוד בלי לאבד אותו, וסמנו את החמושים שהוא פוגש בדרך.' },
+};
+const MORDER = ['strike', 'cas', 'rescue', 'recon'];
+const DIFFS = [
+  { name: 'קל', mult: 1, time: 1.3, en: 0.7, aa: 0, acc: 0.6, force: 'מעט' },
+  { name: 'בינוני', mult: 1.6, time: 1.12, en: 1, aa: 1, acc: 0.8, force: 'בינוני' },
+  { name: 'קשה', mult: 2.4, time: 1, en: 1.3, aa: 2, acc: 1, force: 'רב' },
+  { name: 'קשה מאוד', mult: 3.4, time: 0.9, en: 1.6, aa: 3, acc: 1.2, force: 'רב מאוד' },
+  { name: 'מומחה', mult: 5, time: 0.8, en: 2, aa: 4, acc: 1.4, force: 'מסיבי' },
+];
+const AA_TXT = ['אין', 'מקלע נ״מ', 'מקלעים וטיל כתף', 'מקלעים וטילי כתף', 'נ״מ כבד'];
+const TOD_TXT = { day: 'יום', dusk: 'דמדומים', night: 'לילה' };
+const TNAME = { launcher: 'משגר רקטות', technical: 'טנדר חמוש', cache: 'מצבור נשק', depot: 'מחסן אמצעי לחימה', shaft: 'פיר מנהרה' };
+const OPNAMES = ['ברק שקט', 'צל ארוך', 'אבן חדה', 'שחר אדום', 'קשת ירוקה', 'רוח צפונית', 'זאב בודד', 'חול נודד', 'כוכב נופל', 'שועל לילה', 'סלע איתן', 'מים עמוקים', 'להב כחול', 'עין חדה', 'נץ אפור', 'אש קרה', 'גשר אור', 'שער ברזל', 'חוט השני', 'ענן נמוך', 'גל שקט', 'יד ארוכה', 'קו אדום', 'מגדל לבן', 'אלון', 'ברוש', 'רימון', 'תאנה', 'צבר', 'דקל'];
+const RANKS = [[0, 'מפעיל מתלמד'], [3, 'מפעיל'], [8, 'מפעיל בכיר'], [15, 'מפקד צוות'], [25, 'מפקד גף'], [40, 'מפקד טייסת']];
+
+/* ---------- שמירה ---------- */
+let S = null;
+function newSave() {
+  return { v: SAVE_VERSION, money: 1500, drones: { wasp: 1 }, ammo: { gun: 0, missile: 0, loiter: 2, bomb: 0, bunker: 0 }, air: 0, up: {},
+    stats: { done: 0, failed: 0, earned: 0, kills: 0, civ: 0 }, board: null, lastDiff: {}, lastDrone: 'wasp' };
+}
+function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { } }
+function loadSave() { try { const d = JSON.parse(localStorage.getItem(SAVE_KEY)); if (d && d.v === SAVE_VERSION) return d; } catch (e) { } return null; }
+function upv(id) { const u = UPGRADES.find(x => x.id === id); return u.levels[Math.min((S && S.up[id]) || 0, u.levels.length - 1)].v; }
+function rankOf(done) { let r = RANKS[0][1]; for (const [n, t] of RANKS) if (done >= n) r = t; return r; }
+function maxOwnedCls() { return Math.max(...Object.keys(S.drones).map(k => DRONES[k].cls)); }
+
+let SET = { sound: true, voice: true, vol: 0.8 };
+try { Object.assign(SET, JSON.parse(localStorage.getItem(SET_KEY)) || {}); } catch (e) { }
+function saveSet() { try { localStorage.setItem(SET_KEY, JSON.stringify(SET)); } catch (e) { } }
+
+/* ---------- צלילים (Web Audio, הכול מסונתז) ---------- */
+const AU = { ctx: null, master: null, noise: null, hum: null, gunT: 0 };
+function auInit() {
+  if (AU.ctx) { if (AU.ctx.state === 'suspended') AU.ctx.resume(); return; }
+  try {
+    const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
+    AU.ctx = new C(); AU.master = AU.ctx.createGain(); AU.master.gain.value = SET.sound ? SET.vol : 0; AU.master.connect(AU.ctx.destination);
+    const len = AU.ctx.sampleRate * 2, b = AU.ctx.createBuffer(1, len, AU.ctx.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    AU.noise = b;
+  } catch (e) { AU.ctx = null; }
+}
+function auVol() { if (AU.master) AU.master.gain.value = SET.sound ? SET.vol : 0; }
+function nz(dur, f0, f1, type, vol, q, delay) {
+  const c = AU.ctx; if (!c || !SET.sound) return;
+  const t = c.currentTime + (delay || 0), s = c.createBufferSource(); s.buffer = AU.noise; s.loop = true;
+  const f = c.createBiquadFilter(); f.type = type || 'lowpass'; f.Q.value = q || 1;
+  f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(Math.max(30, f1), t + dur);
+  const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  s.connect(f); f.connect(g); g.connect(AU.master); s.start(t, Math.random()); s.stop(t + dur + 0.05);
+}
+function tone(freq, dur, type, vol, delay, f1) {
+  const c = AU.ctx; if (!c || !SET.sound) return;
+  const t = c.currentTime + (delay || 0), o = c.createOscillator(), g = c.createGain();
+  o.type = type || 'sine'; o.frequency.setValueAtTime(freq, t); if (f1) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(AU.master); o.start(t); o.stop(t + dur + 0.05);
+}
+const SFX = {
+  boom(r) { const s = clamp(r / 14, 0.25, 1.7); nz(0.5 + s * 0.9, 700 * s + 300, 40, 'lowpass', Math.min(1, 0.35 + s * 0.5)); tone(70, 0.4 + s * 0.5, 'sine', Math.min(0.8, 0.3 * s + 0.2), 0, 28); },
+  launch() { nz(0.9, 500, 2600, 'bandpass', 0.22, 2); },
+  drop() { tone(900, 0.3, 'sine', 0.05, 0, 300); },
+  gun() { const c = AU.ctx; if (!c) return; if (c.currentTime - AU.gunT < 0.05) return; AU.gunT = c.currentTime; nz(0.07, 3200, 900, 'bandpass', 0.22, 1.4); },
+  far() { const c = AU.ctx; if (!c) return; if (c.currentTime - AU.gunT < 0.12) return; AU.gunT = c.currentTime; nz(0.05, 1800, 700, 'bandpass', 0.06, 1.2); },
+  click() { tone(1300, 0.05, 'square', 0.05); },
+  radio() { nz(0.1, 2600, 1800, 'bandpass', 0.1, 3); tone(1500, 0.06, 'sine', 0.06, 0.11); },
+  alarm() { tone(950, 0.11, 'square', 0.1); tone(700, 0.11, 'square', 0.1, 0.13); },
+  hit() { nz(0.3, 2000, 200, 'lowpass', 0.5); tone(180, 0.2, 'sawtooth', 0.15, 0, 60); },
+  lock() { tone(1800, 0.06, 'sine', 0.09); tone(2300, 0.07, 'sine', 0.09, 0.07); },
+  flare() { nz(0.5, 4500, 1300, 'highpass', 0.18); },
+  buy() { tone(880, 0.08, 'triangle', 0.1); tone(1320, 0.12, 'triangle', 0.1, 0.08); },
+  win() { [523, 659, 784, 1046].forEach((f, i) => tone(f, 0.28, 'triangle', 0.13, i * 0.12)); },
+  fail() { [392, 330, 262].forEach((f, i) => tone(f, 0.4, 'sawtooth', 0.07, i * 0.2)); },
+};
+function humStart() {
+  const c = AU.ctx; if (!c || AU.hum) return;
+  const o = c.createOscillator(), o2 = c.createOscillator(), f = c.createBiquadFilter(), g = c.createGain();
+  o.type = 'sawtooth'; o.frequency.value = 92; o2.type = 'sawtooth'; o2.frequency.value = 93.5;
+  f.type = 'lowpass'; f.frequency.value = 380; g.gain.value = 0.022;
+  o.connect(f); o2.connect(f); f.connect(g); g.connect(AU.master); o.start(); o2.start();
+  AU.hum = { o, o2, g };
+}
+function humStop() { if (!AU.hum) return; try { AU.hum.o.stop(); AU.hum.o2.stop(); } catch (e) { } AU.hum = null; }
+let HE_VOICE = null;
+function pickVoice() { try { HE_VOICE = speechSynthesis.getVoices().find(v => /^he|^iw/i.test(v.lang)) || null; } catch (e) { } }
+if (window.speechSynthesis) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function say(text) {
+  if (!SET.voice || !SET.sound || !window.speechSynthesis || !HE_VOICE) return;
+  try { const u = new SpeechSynthesisUtterance(text); u.lang = HE_VOICE.lang; u.voice = HE_VOICE; u.rate = 1.12; u.volume = SET.vol; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) { }
+}
+
+/* =====================================================================
+   עולם: יצירת מפה פרוצדורלית (כבישים, בניינים, מטעים, שדות, תבליט)
+   ===================================================================== */
+const ZONES = {
+  urban: { name: 'מרחב עירוני צפוף', sector: 'גזרה דרומית', sp: 86, jit: 8, rem: 0.07, cores: 1, coreR: [560, 720], base: 0.14, ground: [156, 148, 130], hill: 0.15, civ: 70, cars: 14 },
+  village: { name: 'כפרים ומטעים', sector: 'גזרה צפונית', sp: 128, jit: 22, rem: 0.22, cores: 3, coreR: [200, 270], base: 0.03, ground: [132, 131, 104], hill: 1, civ: 42, cars: 9 },
+  open: { name: 'שטח פתוח ומתחמים', sector: 'גזרה מזרחית', sp: 185, jit: 30, rem: 0.33, cores: 2, coreR: [160, 210], base: 0, ground: [170, 154, 122], hill: 0.8, civ: 24, cars: 6 },
+};
+const TILE = 250, TN = Math.ceil(WORLD / TILE);
+const DAY_B = ['#b8b2a3', '#a39e91', '#c7c1b2', '#918d82'], TH_B = ['#5c5c5c', '#666666', '#545454', '#717171'];
+let WD = null;
+
+function vnoise(n) {
+  const w = n + 1, g = new Float32Array(w * w); for (let i = 0; i < g.length; i++) g[i] = R();
+  return (u, v) => {
+    u = clamp(u, 0, 0.99999) * n; v = clamp(v, 0, 0.99999) * n;
+    const x = u | 0, y = v | 0, fx = u - x, fy = v - y, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy), i = y * w + x;
+    const a = g[i], b = g[i + 1], c = g[i + w], d = g[i + w + 1];
+    return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
+  };
+}
+const tileOf = (x, y) => clamp(Math.floor(y / TILE), 0, TN - 1) * TN + clamp(Math.floor(x / TILE), 0, TN - 1);
+
+function genWorld(seed, zk) {
+  R = mulberry32(seed >>> 0);
+  const Z = ZONES[zk], W = WORLD;
+  /* ----- צפיפות בנייה: מרכזי ישוב ----- */
+  const cores = [];
+  for (let i = 0; i < Z.cores; i++) {
+    let c, t = 0;
+    do { c = { x: rnd(W * .2, W * .8), y: rnd(W * .2, W * .8), r: rnd(Z.coreR[0], Z.coreR[1]) }; t++; }
+    while (t < 40 && cores.some(o => dist(o.x, o.y, c.x, c.y) < (o.r + c.r) * 0.7));
+    cores.push(c);
+  }
+  if (zk === 'urban') { cores[0].x = rnd(W * .42, W * .58); cores[0].y = rnd(W * .42, W * .58); }
+  const dens = (x, y) => { let d = Z.base; for (const c of cores) { const k = 1 - dist(x, y, c.x, c.y) / c.r; if (k > 0) d = Math.max(d, Z.base + (1 - Z.base) * Math.min(1, k * 1.7)); } return d; };
+
+  /* ----- רשת כבישים ----- */
+  const n = Math.round(W / Z.sp), sp = W / n, off = -sp * 0.4, N = n + 2;
+  const nodes = [];
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+    const e = i === 0 || j === 0 || i === N - 1 || j === N - 1;
+    const x = off + i * sp + (e ? 0 : rnd(-Z.jit, Z.jit)), y = off + j * sp + (e ? 0 : rnd(-Z.jit, Z.jit));
+    nodes.push({ x, y, adj: [], inMap: x > 12 && y > 12 && x < W - 12 && y < W - 12, comp: false });
+  }
+  const nid = (i, j) => j * N + i;
+  const edges = [], me = zk === 'urban' ? 3 : 2, mo = rint(0, me - 1);
+  function addE(a, b, main) {
+    const A = nodes[a], B = nodes[b], d = dens((A.x + B.x) / 2, (A.y + B.y) / 2);
+    if (!main && R() < Z.rem * (1.7 - d)) return;
+    edges.push({ a, b, main, dirt: !main && zk !== 'urban' && d < 0.3, len: dist(A.x, A.y, B.x, B.y) });
+  }
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+    if (i < N - 1) addE(nid(i, j), nid(i + 1, j), j % me === mo);
+    if (j < N - 1) addE(nid(i, j), nid(i, j + 1), i % me === mo);
+  }
+  edges.forEach((e, k) => { nodes[e.a].adj.push(k); nodes[e.b].adj.push(k); });
+  { // רכיב קשירות ראשי (רק צמתים בתוך המפה)
+    let s = -1, bd = 1e9;
+    nodes.forEach((nd, k) => { if (!nd.inMap) return; const d = dist(nd.x, nd.y, W / 2, W / 2); if (d < bd && nd.adj.some(q => edges[q].main)) { bd = d; s = k; } });
+    const q = [s]; nodes[s].comp = true;
+    while (q.length) { const u = q.pop(); for (const k of nodes[u].adj) { const e = edges[k], v = e.a === u ? e.b : e.a; if (!nodes[v].comp && nodes[v].inMap) { nodes[v].comp = true; q.push(v); } } }
+  }
+
+  /* ----- בלוקים ובניינים ----- */
+  const B = [], trees = [], fields = [], walls = [], RH = 6.8;
+  function addB(x, y, w, h, f) {
+    if (w < 5 || h < 5) return null;
+    const b = { id: B.length, x, y, w, h, f, s: rint(0, 3), hp: 0, mhp: 0, ruined: false, det: [] };
+    b.mhp = b.hp = Math.round(90 + 45 * f + w * h * 0.25);
+    const nd = Math.floor(w * h / 80 * rnd(0.2, 1.1));
+    for (let k = 0; k < nd; k++) b.det.push([rnd(1, w - 2), rnd(1, h - 2), chance(0.6) ? 0 : 1]);
+    B.push(b); return b;
+  }
+  function urbanBlock(x0, y0, x1, y1, de) {
+    const lots = [];
+    (function split(x, y, w, h, dep) {
+      const mx = rnd(15, 24);
+      if ((w < mx * 1.6 && h < mx * 1.6) || dep > 7) { lots.push([x, y, w, h]); return; }
+      if (w > h) { const s = w * rnd(0.35, 0.65); split(x, y, s, h, dep + 1); split(x + s, y, w - s, h, dep + 1); }
+      else { const s = h * rnd(0.35, 0.65); split(x, y, w, s, dep + 1); split(x, y + s, w, h - s, dep + 1); }
+    })(x0, y0, x1 - x0, y1 - y0, 0);
+    for (const [x, y, w, h] of lots) {
+      if (R() < 0.5 + 0.45 * de) { const g = rnd(0.8, 2.2); addB(x + g, y + g, w - 2 * g, h - 2 * g, 1 + Math.floor(de * rnd(0.5, 5.5))); }
+      else if (chance(0.35)) trees.push({ x: x + w / 2 + rnd(-2, 2), y: y + h / 2 + rnd(-2, 2), r: rnd(2.5, 4) });
+    }
+  }
+  function orchard(x0, y0, x1, y1, avoid) {
+    const s = rnd(5.5, 7.5);
+    for (let y = y0 + 3; y < y1 - 2; y += s) for (let x = x0 + 3; x < x1 - 2; x += s) {
+      if (avoid && avoid.some(o => x > o.x - 4 && x < o.x + o.w + 4 && y > o.y - 4 && y < o.y + o.h + 4)) continue;
+      if (chance(0.9)) trees.push({ x: x + rnd(-0.6, 0.6), y: y + rnd(-0.6, 0.6), r: rnd(1.8, 2.6) });
+    }
+  }
+  function villageBlock(x0, y0, x1, y1, de) {
+    const area = (x1 - x0) * (y1 - y0), cnt = Math.round(area / 700 * (0.4 + de)), local = [];
+    for (let k = 0; k < cnt; k++) for (let t = 0; t < 12; t++) {
+      const w = rnd(8, 16), h = rnd(8, 15), x = rnd(x0, x1 - w), y = rnd(y0, y1 - h);
+      if (x < x0 || y < y0 || x + w > x1 || y + h > y1) continue;
+      if (local.some(o => x < o.x + o.w + 5 && x + w + 5 > o.x && y < o.y + o.h + 5 && y + h + 5 > o.y)) continue;
+      const b = addB(x, y, w, h, rint(1, 3)); if (b) local.push(b);
+      for (let q = rint(0, 3); q > 0; q--) trees.push({ x: x + rnd(-4, w + 4), y: y + rnd(-4, h + 4), r: rnd(2.2, 3.6) });
+      break;
+    }
+    if (chance(0.4)) orchard(x0, y0, x1, y1, local);
+  }
+  function fieldRect(x0, y0, x1, y1) { const m = rnd(2, 6); return { x: x0 + m, y: y0 + m, w: x1 - x0 - 2 * m, h: y1 - y0 - 2 * m, k: rint(0, 3), dir: chance(0.5) }; }
+  function scrub(x0, y0, x1, y1, k) { const c = Math.round((x1 - x0) * (y1 - y0) / 2500 * k); for (let i = 0; i < c; i++) trees.push({ x: rnd(x0, x1), y: rnd(y0, y1), r: rnd(0.9, 1.8) }); }
+  function compound(x0, y0, x1, y1) {
+    const w = rnd(30, 55), h = rnd(25, 45); if (x1 - x0 < w + 4 || y1 - y0 < h + 4) return;
+    const x = rnd(x0 + 2, x1 - w - 2), y = rnd(y0 + 2, y1 - h - 2); walls.push({ x, y, w, h });
+    const local = [];
+    for (let k = rint(1, 3); k > 0; k--) for (let t = 0; t < 10; t++) {
+      const bw = rnd(8, Math.min(18, w - 6)), bh = rnd(7, Math.min(15, h - 6)), bx = rnd(x + 2, x + w - bw - 2), by = rnd(y + 2, y + h - bh - 2);
+      if (local.some(o => bx < o.x + o.w + 3 && bx + bw + 3 > o.x && by < o.y + o.h + 3 && by + bh + 3 > o.y)) continue;
+      const b = addB(bx, by, bw, bh, rint(1, 2)); if (b) local.push(b); break;
+    }
+  }
+  function ruralBlock(x0, y0, x1, y1) {
+    const r = R();
+    if (zk === 'village') { if (r < 0.45) orchard(x0, y0, x1, y1, null); else if (r < 0.85) fields.push(fieldRect(x0, y0, x1, y1)); else scrub(x0, y0, x1, y1, 8); }
+    else if (zk === 'open') { if (r < 0.16) compound(x0, y0, x1, y1); else if (r < 0.36) fields.push(fieldRect(x0, y0, x1, y1)); else scrub(x0, y0, x1, y1, 4); }
+    else { if (r < 0.5) fields.push(fieldRect(x0, y0, x1, y1)); else if (r < 0.75) orchard(x0, y0, x1, y1, null); else scrub(x0, y0, x1, y1, 6); if (chance(0.25)) compound(x0, y0, x1, y1); }
+  }
+  for (let j = 0; j < N - 1; j++) for (let i = 0; i < N - 1; i++) {
+    const a = nodes[nid(i, j)], b = nodes[nid(i + 1, j)], c = nodes[nid(i, j + 1)], d = nodes[nid(i + 1, j + 1)];
+    let x0 = Math.max(a.x, c.x) + RH, x1 = Math.min(b.x, d.x) - RH, y0 = Math.max(a.y, b.y) + RH, y1 = Math.min(c.y, d.y) - RH;
+    x0 = Math.max(x0, 4); y0 = Math.max(y0, 4); x1 = Math.min(x1, W - 4); y1 = Math.min(y1, W - 4);
+    if (x1 - x0 < 14 || y1 - y0 < 14) continue;
+    const de = dens((x0 + x1) / 2, (y0 + y1) / 2);
+    if (de > 0.5) urbanBlock(x0, y0, x1, y1, de); else if (de > 0.16) villageBlock(x0, y0, x1, y1, de); else ruralBlock(x0, y0, x1, y1);
+  }
+
+  /* ----- אינדקסים מרחביים ----- */
+  const GC = 40, GN = Math.ceil(W / GC) + 1, bgrid = Array.from({ length: GN * GN }, () => []);
+  for (const b of B) {
+    const i0 = clamp(Math.floor(b.x / GC), 0, GN - 1), i1 = clamp(Math.floor((b.x + b.w) / GC), 0, GN - 1), j0 = clamp(Math.floor(b.y / GC), 0, GN - 1), j1 = clamp(Math.floor((b.y + b.h) / GC), 0, GN - 1);
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) bgrid[j * GN + i].push(b);
+  }
+  const bAt = (x, y, pad = 0) => {
+    const i = Math.floor(x / GC), j = Math.floor(y / GC); if (i < 0 || j < 0 || i >= GN || j >= GN) return null;
+    for (const b of bgrid[j * GN + i]) if (!b.ruined && x >= b.x - pad && x <= b.x + b.w + pad && y >= b.y - pad && y <= b.y + b.h + pad) return b;
+    return null;
+  };
+  let stamp = 1;
+  const bNear = (x, y, r) => {
+    const out = [], st = ++stamp;
+    const i0 = clamp(Math.floor((x - r) / GC), 0, GN - 1), i1 = clamp(Math.floor((x + r) / GC), 0, GN - 1), j0 = clamp(Math.floor((y - r) / GC), 0, GN - 1), j1 = clamp(Math.floor((y + r) / GC), 0, GN - 1);
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) for (const b of bgrid[j * GN + i]) { if (b._q === st) continue; b._q = st; if (circRect(x, y, r, b)) out.push(b); }
+    return out;
+  };
+  const EG = 60, EN = Math.ceil(W / EG) + 2, egrid = Array.from({ length: EN * EN }, () => []);
+  edges.forEach((e, k) => {
+    const A = nodes[e.a], Bn = nodes[e.b];
+    const x0 = Math.floor((Math.min(A.x, Bn.x) - 12) / EG), x1 = Math.floor((Math.max(A.x, Bn.x) + 12) / EG), y0 = Math.floor((Math.min(A.y, Bn.y) - 12) / EG), y1 = Math.floor((Math.max(A.y, Bn.y) + 12) / EG);
+    for (let j = y0; j <= y1; j++) for (let i = x0; i <= x1; i++) if (i >= 0 && j >= 0 && i < EN && j < EN) egrid[j * EN + i].push(k);
+  });
+  const roadDist = (x, y) => {
+    const i = Math.floor(x / EG), j = Math.floor(y / EG); let best = 1e9; if (i < 0 || j < 0 || i >= EN || j >= EN) return best;
+    for (const k of egrid[j * EN + i]) { const e = edges[k], A = nodes[e.a], Bn = nodes[e.b], d = segDist(x, y, A.x, A.y, Bn.x, Bn.y).d; if (d < best) best = d; }
+    return best;
+  };
+  // ניקוי עצים שנפלו על בניינים או כבישים
+  const T2 = trees.filter(t => t.x > 2 && t.y > 2 && t.x < W - 2 && t.y < W - 2 && !bAt(t.x, t.y, t.r * 0.4) && roadDist(t.x, t.y) > 5 + t.r * 0.4);
+
+  /* ----- קרקע: תבליט, צבע ותרמי (מצויר פעם אחת לקנבס) ----- */
+  const GS = 512, gDay = mkCanvas(GS, GS), gTh = mkCanvas(GS, GS);
+  const n6 = vnoise(6), n12 = vnoise(12), n24 = vnoise(24), n48 = vnoise(48), n96 = vnoise(96), nveg = vnoise(10);
+  const H = new Float32Array(GS * GS);
+  for (let y = 0; y < GS; y++) for (let x = 0; x < GS; x++) { const u = (x + .5) / GS, v = (y + .5) / GS; H[y * GS + x] = 0.5 * n6(u, v) + 0.27 * n12(u, v) + 0.15 * n24(u, v) + 0.08 * n48(u, v); }
+  const gd = gDay.getContext('2d'), gt = gTh.getContext('2d'), dI = gd.createImageData(GS, GS), tI = gt.createImageData(GS, GS);
+  const [br, bg, bb] = Z.ground;
+  for (let y = 0; y < GS; y++) for (let x = 0; x < GS; x++) {
+    const i = y * GS + x, h = H[i];
+    const xl = H[y * GS + Math.max(0, x - 1)], xr = H[y * GS + Math.min(GS - 1, x + 1)], yu = H[Math.max(0, y - 1) * GS + x], yd = H[Math.min(GS - 1, y + 1) * GS + x];
+    const sh = clamp(((xl - xr) + (yu - yd)) * 9 * Z.hill, -0.32, 0.32);
+    const u = (x + .5) / GS, v = (y + .5) / GS, fine = n96(u, v), veg = nveg(u, v);
+    const k = (0.86 + 0.24 * (h - 0.5) + 0.09 * (fine - 0.5)) * (1 + sh);
+    let r = br * k, g = bg * k, b = bb * k;
+    if (zk === 'village' && veg > 0.5) { const t = Math.min(1, (veg - 0.5) * 2.2) * 0.55; r = lerp(r, 96 * k, t); g = lerp(g, 112 * k, t); b = lerp(b, 70 * k, t); }
+    if (zk === 'open' && h < 0.4) { const t = (0.4 - h) * 2; r *= 1 - t * 0.25; g *= 1 - t * 0.2; b *= 1 - t * 0.15; }
+    dI.data[i * 4] = r; dI.data[i * 4 + 1] = g; dI.data[i * 4 + 2] = b; dI.data[i * 4 + 3] = 255;
+    const tv = 62 + 28 * (h - 0.5) + 10 * (fine - 0.5) + 40 * sh + (zk === 'urban' ? 6 : 0);
+    tI.data[i * 4] = tI.data[i * 4 + 1] = tI.data[i * 4 + 2] = tv; tI.data[i * 4 + 3] = 255;
+  }
+  gd.putImageData(dI, 0, 0); gt.putImageData(tI, 0, 0);
+  const s = GS / W, FC = ['#707c4a', '#96865c', '#a49664', '#647044'], FT = ['#363636', '#464646', '#3e3e3e', '#303030'];
+  for (const f of fields) {
+    gd.fillStyle = FC[f.k]; gd.fillRect(f.x * s, f.y * s, f.w * s, f.h * s);
+    gt.fillStyle = FT[f.k]; gt.fillRect(f.x * s, f.y * s, f.w * s, f.h * s);
+    gd.fillStyle = 'rgba(0,0,0,0.09)';
+    if (f.dir) for (let x = f.x; x < f.x + f.w; x += 5) gd.fillRect(x * s, f.y * s, 0.7, f.h * s);
+    else for (let y = f.y; y < f.y + f.h; y += 5) gd.fillRect(f.x * s, y * s, f.w * s, 0.7);
+  }
+
+  /* ----- נתיבי ציור ----- */
+  const pMain = new Path2D(), pSmall = new Path2D(), pDirt = new Path2D(), pWalls = new Path2D();
+  for (const e of edges) { const A = nodes[e.a], Bn = nodes[e.b], p = e.main ? pMain : e.dirt ? pDirt : pSmall; p.moveTo(A.x, A.y); p.lineTo(Bn.x, Bn.y); }
+  for (const w of walls) pWalls.rect(w.x, w.y, w.w, w.h);
+  const tiles = [];
+  for (let k = 0; k < TN * TN; k++) tiles.push({ x: (k % TN) * TILE, y: Math.floor(k / TN) * TILE, b: [], t: [] });
+  B.forEach(b => { b.tile = tileOf(b.x + b.w / 2, b.y + b.h / 2); tiles[b.tile].b.push(b); });
+  T2.forEach(t => tiles[tileOf(t.x, t.y)].t.push(t));
+  tiles.forEach(T => { buildTileB(T); buildTileT(T); });
+
+  /* ----- מפה קטנה ----- */
+  const mini = mkCanvas(240, 240), mc = mini.getContext('2d');
+  mc.drawImage(gDay, 0, 0, 240, 240);
+  mc.save(); mc.scale(240 / W, 240 / W); mc.lineCap = 'round';
+  mc.strokeStyle = '#8c8574'; mc.lineWidth = 6; mc.stroke(pDirt); mc.strokeStyle = '#55534e'; mc.lineWidth = 7; mc.stroke(pSmall); mc.lineWidth = 10; mc.stroke(pMain);
+  mc.fillStyle = '#ddd6c6'; for (const b of B) mc.fillRect(b.x, b.y, b.w, b.h);
+  mc.restore(); mc.fillStyle = 'rgba(0,10,5,0.3)'; mc.fillRect(0, 0, 240, 240);
+
+  /* ----- שאילתות על המפה ----- */
+  const inside = (x, y, m) => x > m && y > m && x < W - m && y < W - m;
+  const randNode = (margin = 100) => {
+    for (let t = 0; t < 200; t++) { const k = Math.floor(R() * nodes.length), nd = nodes[k]; if (nd.comp && inside(nd.x, nd.y, margin)) return k; }
+    return nodes.findIndex(nd => nd.comp);
+  };
+  const nodeNear = (x, y) => { let best = -1, bd = 1e9; nodes.forEach((nd, k) => { if (!nd.comp) return; const d = dist(nd.x, nd.y, x, y); if (d < bd) { bd = d; best = k; } }); return best; };
+  const randEdge = (md = 0) => {
+    for (let t = 0; t < 80; t++) {
+      const e = edges[Math.floor(R() * edges.length)], A = nodes[e.a], Bn = nodes[e.b];
+      if (!A.comp || !Bn.comp || dens((A.x + Bn.x) / 2, (A.y + Bn.y) / 2) < md) continue;
+      return R() < 0.5 ? { na: e.a, nb: e.b } : { na: e.b, nb: e.a };
+    }
+    const e = edges.find(e => nodes[e.a].comp && nodes[e.b].comp); return e ? { na: e.a, nb: e.b } : null;
+  };
+  const route = (a, b) => {
+    const nn = nodes.length, d = new Float64Array(nn).fill(Infinity), p = new Int32Array(nn).fill(-1), done = new Uint8Array(nn);
+    d[a] = 0;
+    for (; ;) {
+      let u = -1, best = Infinity; for (let i = 0; i < nn; i++) if (!done[i] && d[i] < best) { best = d[i]; u = i; }
+      if (u < 0 || u === b) break; done[u] = 1;
+      for (const k of nodes[u].adj) { const e = edges[k], v = e.a === u ? e.b : e.a; if (!nodes[v].comp) continue; const nd = d[u] + e.len * (e.main ? 0.8 : 1); if (nd < d[v]) { d[v] = nd; p[v] = u; } }
+    }
+    if (d[b] === Infinity) return null;
+    const path = []; for (let v = b; v >= 0; v = p[v]) path.push(v); return path.reverse();
+  };
+  const nearestRoad = (x, y) => {
+    let best = null, bd = 1e9;
+    const scan = list => { for (const k of list) { const e = edges[k], A = nodes[e.a], Bn = nodes[e.b]; if (!A.comp || !Bn.comp) continue; const r = segDist(x, y, A.x, A.y, Bn.x, Bn.y); if (r.d < bd) { bd = r.d; best = { na: e.a, nb: e.b, t: r.t, x: A.x + (Bn.x - A.x) * r.t, y: A.y + (Bn.y - A.y) * r.t, ang: Math.atan2(Bn.y - A.y, Bn.x - A.x) }; } } };
+    const i = Math.floor(x / EG), j = Math.floor(y / EG); if (i >= 0 && j >= 0 && i < EN && j < EN) scan(egrid[j * EN + i]);
+    if (!best || bd > EG * 0.8) scan(edges.map((_, k) => k));
+    return best;
+  };
+  const openSpot = (x, y, r, clear = 7) => {
+    for (let t = 0; t < 50; t++) {
+      const px = clamp(x + rnd(-r, r), 40, W - 40), py = clamp(y + rnd(-r, r), 40, W - 40);
+      if (!bAt(px, py, 2.5) && roadDist(px, py) > clear) return { x: px, y: py };
+    }
+    return freeSpot(x, y, r);
+  };
+  const freeSpot = (x, y, r) => {
+    for (let t = 0; t < 50; t++) { const px = clamp(x + rnd(-r, r), 30, W - 30), py = clamp(y + rnd(-r, r), 30, W - 30); if (!bAt(px, py, 1.5)) return { x: px, y: py }; }
+    return { x: clamp(x, 30, W - 30), y: clamp(y, 30, W - 30) };
+  };
+  const findArea = (dmin, dmax, margin = 300) => {
+    for (let t = 0; t < 120; t++) { const x = rnd(margin, W - margin), y = rnd(margin, W - margin), d = dens(x, y); if (d >= dmin && d <= dmax) return { x, y }; }
+    return { x: W / 2, y: W / 2 };
+  };
+
+  const out = {
+    zk, Z, nodes, edges, B, trees: T2, fields, walls, dens, gDay, gTh, mini, pMain, pSmall, pDirt, pWalls, tiles,
+    baseDay: `rgb(${Z.ground.map(v => Math.round(v * 0.86)).join(',')})`,
+    bAt, bNear, roadDist, randNode, nodeNear, randEdge, route, nearestRoad, openSpot, freeSpot, findArea, inside,
+  };
+  R = Math.random;
+  return out;
+}
+
+function buildTileB(T) {
+  T.pb = [new Path2D(), new Path2D(), new Path2D(), new Path2D()]; T.pall = new Path2D(); T.psh = new Path2D();
+  T.ptank = new Path2D(); T.psol = new Path2D(); T.prubB = new Path2D(); T.prub = new Path2D(); T.hasRub = false;
+  for (const b of T.b) {
+    if (b.ruined) {
+      T.hasRub = true; T.prubB.rect(b.x - 1, b.y - 1, b.w + 2, b.h + 2);
+      for (const r of b.rub) T.prub.rect(r[0], r[1], r[2], r[3]);
+      continue;
+    }
+    const o = 0.8 + b.f * 1.1; T.psh.rect(b.x + o * 0.9, b.y + o, b.w, b.h);
+    T.pb[b.s].rect(b.x, b.y, b.w, b.h); T.pall.rect(b.x, b.y, b.w, b.h);
+    for (const [dx, dy, k] of b.det) { if (k === 0) { T.ptank.moveTo(b.x + dx + 0.7, b.y + dy); T.ptank.arc(b.x + dx, b.y + dy, 0.7, 0, TAU); } else T.psol.rect(b.x + dx, b.y + dy, 1.5, 1); }
+  }
+}
+function buildTileT(T) {
+  T.pt = new Path2D(); T.ptsh = new Path2D(); T.pthi = new Path2D();
+  for (const t of T.t) {
+    T.pt.moveTo(t.x + t.r, t.y); T.pt.arc(t.x, t.y, t.r, 0, TAU);
+    T.ptsh.moveTo(t.x + t.r + 0.9, t.y + 1.1); T.ptsh.arc(t.x + 0.9, t.y + 1.1, t.r, 0, TAU);
+    const hr = t.r * 0.5; T.pthi.moveTo(t.x - t.r * 0.3 + hr, t.y - t.r * 0.3); T.pthi.arc(t.x - t.r * 0.3, t.y - t.r * 0.3, hr, 0, TAU);
+  }
+}
+function ruinBuilding(b) {
+  if (b.ruined) return;
+  b.ruined = true; b.hp = 0; b.rub = [];
+  const n = Math.round(6 + b.w * b.h / 40);
+  for (let i = 0; i < n; i++) { const w = rnd(1, 3.5), h = rnd(1, 3); b.rub.push([b.x + rnd(-1.5, b.w - w + 1.5), b.y + rnd(-1.5, b.h - h + 1.5), w, h]); }
+  buildTileB(WD.tiles[b.tile]);
+}
+
+/* =====================================================================
+   משחק: ישויות, תנועה, ירי, פיצוצים ומשימות
+   ===================================================================== */
+let M = null, drone = null;
+let ents = [], shots = [], emiss = [], rockets = [], parts = [], decals = [], tracers = [], squads = [], helis = [], timers = [];
+const FR = [];             // כוחות ידידותיים גלויים (מטרות לאויב)
+let EID = 1;
+const cam = { x: WORLD / 2, y: WORLD / 2, z: 2, zt: 2, slew: null };
+let thermal = false, selW = 0, loadout = [], firing = false, fireCd = 0, orbitMode = false, paused = false;
+let confirmAt = 0, shake = 0, staticT = 0, flashT = 0, aiT = 0;
+const sway = { x: 0, y: 0 }, WIND = { x: 1.2, y: 0.5 };
+const keys = {};
+const later = (t, fn) => timers.push({ t, fn });
+function HOOK() { return (M && MIS[M.type]) || {}; }
+function obj(id) { return M.objs.find(o => o.id === id) || {}; }
+function setObj(id, patch) { const o = M.objs.find(o => o.id === id); if (o) { Object.assign(o, patch); renderObjs(); } }
+
+/* ---------- יצירת ישויות ---------- */
+const CIV_COLS = ['#d9d2c3', '#6b5b4b', '#3e4b5c', '#8b3b3b', '#c8b38a', '#2b2b2b', '#5d6b4a', '#a8a39a', '#e4dccb', '#4a3f5c'];
+function mkP(side, role, x, y, o) {
+  const e = Object.assign({ id: EID++, k: 'p', side, role, x, y, ang: rnd(TAU), hp: 100, mhp: 100, r: 0.9, alive: true, inside: null, inT: 0, st: 'idle', t: rnd(2), cd: rnd(1, 3), spd: rnd(1.1, 1.5),
+    tx: x, ty: y, hx: x, hy: y, marked: false, armed: side === 'enemy' || side === 'friend',
+    col: side === 'civ' ? pick(CIV_COLS) : side === 'friend' ? '#56683f' : side === 'hostage' ? '#d2c9b6' : pick(['#2c2e25', '#38392e', '#26282a', '#3b352b']) }, o || {});
+  ents.push(e); return e;
+}
+function mkV(side, role, x, y, o) {
+  const hp = { car: 110, technical: 170, truck: 200, target: 130, hvt: 130 }[role] || 150;
+  const e = Object.assign({ id: EID++, k: 'v', side, role, x, y, ang: 0, hp, mhp: hp, r: 2.7, len: 5.2, wid: 2.4, alive: true, st: 'park', spd: 0, vmax: rnd(9, 13), cd: rnd(1, 3), marked: false, heat: 0.5,
+    col: role === 'car' ? pick(['#d8d8d2', '#8a8f96', '#2e3135', '#9b2d2d', '#c9c2a8', '#3c5a7a', '#5b5f46']) : (role === 'target' || role === 'hvt') ? '#ecebe6' : role === 'technical' ? '#c9c0a4' : '#8d8a7c' }, o || {});
+  if (role === 'technical') { e.len = 5.6; e.armed = true; }
+  if (role === 'truck') { e.len = 7.5; e.wid = 2.6; }
+  ents.push(e); return e;
+}
+function mkS(role, x, y, o) {
+  const def = { launcher: { hp: 180, r: 2.6 }, hmg: { hp: 110, r: 2.2, aa: true }, cache: { hp: 120, r: 2.4 }, shaft: { hp: 460, r: 2.2, hard: true }, crates: { hp: 60, r: 1.6 } }[role];
+  const e = Object.assign({ id: EID++, k: 's', side: 'enemy', role, x, y, ang: rnd(TAU), hp: def.hp, mhp: def.hp, r: def.r, hard: !!def.hard, aa: !!def.aa, alive: true, cd: rnd(2, 5), marked: false }, o || {});
+  ents.push(e); return e;
+}
+function label(e) {
+  if (e.role === 'contact') return e.armed ? 'איש קשר חמוש' : 'איש קשר (לא חמוש)';
+  if (e.k === 'p' && e.side === 'enemy' && !e.armed) return 'חשוד לא חמוש';
+  return { civ: 'אזרח', rifle: 'חמוש', guard: 'חמוש', rpg: 'נושא RPG', manpads: 'טיל כתף!', soldier: 'כוחותינו', hostage: 'חטוף', car: 'רכב אזרחי', technical: 'טנדר חמוש', truck: 'משאית',
+    target: 'רכב המטרה', hvt: 'מפקד בכיר', launcher: 'משגר רקטות', hmg: 'מקלע נ״מ', cache: 'מצבור נשק', shaft: 'פיר מנהרה', crates: 'ארגזי תחמושת' }[e.role] || '?';
+}
+
+/* ---------- תנועה על כבישים ---------- */
+function roadPos(e) {
+  const A = WD.nodes[e.na], B = WD.nodes[e.nb], dx = B.x - A.x, dy = B.y - A.y, L = Math.hypot(dx, dy) || 1;
+  return { x: A.x + dx * e.t - dy / L * e.off, y: A.y + dy * e.t + dx / L * e.off, ang: Math.atan2(dy, dx), L };
+}
+function placeOnEdge(e, ed, t, off) { e.na = ed.na; e.nb = ed.nb; e.t = t; e.off = off; const p = roadPos(e); e.x = p.x; e.y = p.y; e.ang = p.ang; }
+function setRoute(e, r) { e.route = r; e.ri = 1; e.na = r[0]; e.nb = r[1]; e.t = 0; if (e.off === undefined) e.off = 2.6; }
+function nextNode(e) {
+  if (e.route) { e.ri++; return e.ri < e.route.length ? e.route[e.ri] : -1; }
+  const nd = WD.nodes[e.nb], opts = [];
+  for (const k of nd.adj) { const ed = WD.edges[k], o = ed.a === e.nb ? ed.b : ed.a; if (o !== e.na && WD.nodes[o].comp) opts.push(o); }
+  return opts.length ? pick(opts) : e.na;
+}
+function stepRoad(e, dt, spd) {
+  let A = WD.nodes[e.na], B = WD.nodes[e.nb], L = dist(A.x, A.y, B.x, B.y) || 1;
+  e.t += spd * dt / L;
+  let guard = 0;
+  while (e.t >= 1 && guard++ < 4) {
+    if (e.stopAt && e.stopAt(e)) { e.t = 1; break; }
+    const nx = nextNode(e);
+    if (nx < 0) { e.t = 1; e.arrived = true; break; }
+    e.t = (e.t - 1) * L; e.na = e.nb; e.nb = nx;
+    A = WD.nodes[e.na]; B = WD.nodes[e.nb]; L = dist(A.x, A.y, B.x, B.y) || 1; e.t /= L;
+  }
+  const p = roadPos(e), k = 1 - Math.exp(-dt * 9);
+  e.x += (p.x - e.x) * k; e.y += (p.y - e.y) * k; e.ang = angLerp(e.ang, p.ang, dt * 7); e.moving = true;
+}
+function moveTo(e, tx, ty, spd, dt) {
+  const dx = tx - e.x, dy = ty - e.y, d = Math.hypot(dx, dy); if (d < 0.25) return true;
+  const s = Math.min(d, spd * dt); e.x += dx / d * s; e.y += dy / d * s; e.ang = angLerp(e.ang, Math.atan2(dy, dx), dt * 10); e.moving = true;
+  return d <= spd * dt;
+}
+function boundaryToward(b, x, y) {
+  const cx = clamp(x, b.x, b.x + b.w), cy = clamp(y, b.y, b.y + b.h);
+  const dx = x - cx, dy = y - cy, d = Math.hypot(dx, dy);
+  if (d < 0.01) return { x: clamp(x, b.x, b.x + b.w), y: b.y + b.h + 1.3 };
+  return { x: cx + dx / d * 1.3, y: cy + dy / d * 1.3 };
+}
+function nearestOf(list, x, y, r) { let best = null, bd = r; for (const e of list) { if (!e.alive || e.inside) continue; const d = dist(e.x, e.y, x, y); if (d < bd) { bd = d; best = e; } } return best; }
+function nearestEnemy(x, y, r) { let best = null, bd = r; for (const e of ents) { if (!e.alive || e.inside || e.side !== 'enemy' || e.passive) continue; if (e.k === 'v' && !e.armed) continue; const d = dist(e.x, e.y, x, y); if (d < bd) { bd = d; best = e; } } return best; }
+
+/* ---------- כניסה ויציאה ממבנים ---------- */
+function goInside(e, r, dur, run) {
+  let b = null, bd = 1e9;
+  for (const q of WD.bNear(e.x, e.y, r)) { if (q.ruined) continue; const d = dist(e.x, e.y, q.x + q.w / 2, q.y + q.h / 2); if (d < bd) { bd = d; b = q; } }
+  if (!b) return false;
+  const p = boundaryToward(b, e.x, e.y); e.tx = p.x; e.ty = p.y; e.tb = b; e.st = 'go'; e.run = !!run; e.inDur = dur; return true;
+}
+function enter(e, b, dur) { e.inside = b; e.inT = dur; e.st = 'in'; e.run = false; e.moving = false; e.x = clamp(e.x, b.x + 0.8, b.x + b.w - 0.8); e.y = clamp(e.y, b.y + 0.8, b.y + b.h - 0.8); }
+function exitBuilding(e) {
+  const b = e.inside; e.inside = null;
+  if (e.side === 'civ') {
+    const q = WD.nearestRoad(b.x + b.w / 2, b.y + b.h / 2); if (!q) { e.st = 'stand'; return; }
+    const p = boundaryToward(b, q.x, q.y); e.x = p.x; e.y = p.y; e.na = q.na; e.nb = q.nb; e.t = q.t; e.off = (chance(.5) ? 1 : -1) * rnd(4.6, 6);
+    const rp = roadPos(e); e.tx = rp.x; e.ty = rp.y; e.st = 'toroad';
+  } else { const p = boundaryToward(b, e.hx, e.hy); e.x = p.x; e.y = p.y; e.st = 'move'; e.tx = e.hx; e.ty = e.hy; }
+}
+function updInside(e, dt) {
+  const b = e.inside;
+  if (!e.still && chance(dt * 0.6)) { e.x = clamp(e.x + rnd(-2.5, 2.5), b.x + 0.8, b.x + b.w - 0.8); e.y = clamp(e.y + rnd(-2.5, 2.5), b.y + 0.8, b.y + b.h - 0.8); }
+  if (e.stay) return;
+  e.inT -= dt; if (e.inT <= 0) exitBuilding(e);
+}
+function panic(e, x, y) {
+  if (e.inside || e.side === 'friend' || e.side === 'hostage') return;
+  if (e.side === 'civ') {
+    if (e.st === 'go' && e.run) return;
+    if (!goInside(e, 40, rnd(20, 45), true)) { const a = Math.atan2(e.y - y, e.x - x); e.tx = e.x + Math.cos(a) * 30; e.ty = e.y + Math.sin(a) * 30; e.tb = null; e.st = 'go'; e.run = true; }
+  } else if (e.side === 'enemy' && e.k === 'p') {
+    if (e.st === 'go' || e.st === 'contact' || e.role === 'hostage') return;
+    if (chance(0.55)) goInside(e, 35, rnd(8, 18), true);
+  }
+}
+
+/* ---------- בינה: אזרחים ואויבים ---------- */
+function updCiv(e, dt) {
+  switch (e.st) {
+    case 'walk':
+      if (e.pause > 0) { e.pause -= dt; break; }
+      stepRoad(e, dt, e.spd);
+      if (chance(dt * 0.035)) e.pause = rnd(2, 7);
+      else if (chance(dt * 0.008)) goInside(e, 25, rnd(12, 40));
+      break;
+    case 'stand': e.t -= dt; if (e.t < 0) { e.t = rnd(2, 6); e.ang += rnd(-1.5, 1.5); } break;
+    case 'go': if (moveTo(e, e.tx, e.ty, e.run ? 3.6 : e.spd, dt)) { if (e.tb && !e.tb.ruined) enter(e, e.tb, e.inDur || rnd(15, 40)); else { e.st = 'stand'; e.t = rnd(4, 9); } } break;
+    case 'toroad': if (moveTo(e, e.tx, e.ty, e.spd, dt)) e.st = 'walk'; break;
+  }
+}
+const erange = e => e.role === 'rpg' ? 95 : (e.role === 'rifle' || e.role === 'guard') ? 78 : 0;
+function updEnemy(e, dt) {
+  if (e.role === 'manpads') tryManpads(e, dt);
+  const R0 = erange(e);
+  if (R0 && e.st !== 'go' && FR.length) {
+    if (e.st !== 'fight' || !e.tgt || !e.tgt.alive || e.tgt.inside) {
+      const f = nearestOf(FR, e.x, e.y, R0);
+      if (f) { e.st = 'fight'; e.tgt = f; } else if (e.st === 'fight') { e.st = 'post'; e.tgt = null; }
+    }
+  }
+  switch (e.st) {
+    case 'idle': case 'post':
+      e.t -= dt;
+      if (e.t < 0) { e.t = rnd(2, 6); if (e.patrol) { e.pi = !e.pi; const p = e.pi ? e.patrol : { x: e.hx, y: e.hy }; e.tx = p.x; e.ty = p.y; e.st = 'move'; } else e.ang += rnd(-1.2, 1.2); }
+      break;
+    case 'move': if (moveTo(e, e.tx, e.ty, e.run ? 3.3 : 1.4, dt)) { e.st = 'post'; e.run = false; } break;
+    case 'fight': {
+      const t = e.tgt;
+      if (!t || !t.alive || t.inside || dist(e.x, e.y, t.x, t.y) > R0 * 1.25) { e.st = 'post'; e.tgt = null; break; }
+      e.ang = angLerp(e.ang, Math.atan2(t.y - e.y, t.x - e.x), dt * 8);
+      e.cd -= dt; if (e.cd <= 0) { enemyShoot(e, t); e.cd = e.role === 'rpg' ? rnd(6, 9) : rnd(0.8, 1.6); }
+      break;
+    }
+    case 'go': if (moveTo(e, e.tx, e.ty, 3.4, dt)) { if (e.tb && !e.tb.ruined) enter(e, e.tb, e.inDur || rnd(8, 18)); else e.st = 'post'; } break;
+    case 'hunt': {
+      const L = e.huntSq && squadLead(e.huntSq);
+      if (!L) { e.st = 'post'; break; }
+      if (dist(e.x, e.y, L.x, L.y) > Math.max(40, R0 * 0.8)) moveTo(e, L.x, L.y, 2.8, dt); else { e.st = 'post'; e.hx = e.x; e.hy = e.y; }
+      break;
+    }
+    case 'contact': updContact(e, dt); break;
+  }
+}
+function enemyShoot(e, t) {
+  const acc = M ? M.Df.acc : 1;
+  muzzle(e.x, e.y, e.ang);
+  if (e.role === 'rpg') {
+    rockets.push({ x: e.x, y: e.y, sx: e.x, sy: e.y, tx: t.x + gauss() * 3, ty: t.y + gauss() * 3, t: 0, T: Math.max(0.4, dist(e.x, e.y, t.x, t.y) / 70) });
+    if (onScreen(e.x, e.y, 0)) SFX.launch();
+    return;
+  }
+  const hit = chance(0.22 * acc * (t.cover ? 0.65 : 1));
+  tracer(e.x, e.y, t.x + (hit ? 0 : gauss() * 5), t.y + (hit ? 0 : gauss() * 5), 'e');
+  if (hit) damage(t, rnd(10, 20), 'enemy');
+  if (onScreen(e.x, e.y, 0)) SFX.far();
+}
+function updContact(e, dt) {
+  if (e.cst === 0) { if (moveTo(e, e.tx, e.ty, 1.4, dt)) e.cst = 1; }
+  else if (e.cst === 1) {
+    if (e.car && e.car.alive) e.ang = angLerp(e.ang, Math.atan2(e.car.y - e.y, e.car.x - e.x), dt * 5);
+    if (!e.car || !e.car.alive || e.car.st === 'drive') {
+      e.cst = 2;
+      if (e.home && !e.home.ruined) { const p = boundaryToward(e.home, e.x, e.y); e.tx = p.x; e.ty = p.y; } else { e.tx = e.x + rnd(-40, 40); e.ty = e.y + rnd(-40, 40); }
+    }
+  } else if (e.cst === 2) {
+    if (moveTo(e, e.tx, e.ty, 1.4, dt)) { if (e.home && !e.home.ruined) { enter(e, e.home, 1e9); e.stay = true; } else e.cst = 3; }
+  }
+}
+
+/* ---------- רכבים ---------- */
+function updVeh(e, dt) {
+  if (e.aa && M) updAA(e, dt);
+  e.heat = clamp(e.heat + (e.moving ? dt * 0.3 : -dt * 0.01), 0.2, 1);
+  e.moving = false;
+  switch (e.st) {
+    case 'drive':
+      e.spd = Math.min(e.vmax, (e.spd || 0) + dt * 5); stepRoad(e, dt, e.spd);
+      if (e.arrived) { e.arrived = false; e.st = 'park'; e.route = null; if (e.onEnd) e.onEnd(e); }
+      break;
+    case 'stop':
+      e.spd = 0;
+      if (e.stopT !== undefined) { e.stopT -= dt; if (e.stopT <= 0) { e.stopT = undefined; e.st = 'drive'; if (e.onGo) e.onGo(e); } }
+      break;
+    case 'hunt': {
+      const L = e.huntSq && squadLead(e.huntSq);
+      e.spd = Math.min(e.vmax, (e.spd || 0) + dt * 5);
+      if (L && dist(e.x, e.y, L.x, L.y) < 115) { e.st = 'fight'; break; }
+      stepRoad(e, dt, e.spd);
+      if (e.arrived) { e.arrived = false; e.st = 'fight'; }
+      break;
+    }
+    case 'fight': {
+      const t = nearestOf(FR, e.x, e.y, 140);
+      if (!t) { reHunt(e); break; }
+      e.cd -= dt;
+      if (e.cd <= 0) {
+        e.cd = rnd(0.18, 0.3); if (chance(0.05)) e.cd = rnd(1.5, 3);
+        const hit = chance(0.1 * M.Df.acc);
+        tracer(e.x, e.y, t.x + (hit ? 0 : gauss() * 5), t.y + (hit ? 0 : gauss() * 5), 'e'); muzzle(e.x, e.y, Math.atan2(t.y - e.y, t.x - e.x));
+        if (hit) damage(t, rnd(10, 16), 'enemy');
+        if (onScreen(e.x, e.y, 0)) SFX.far();
+      }
+      break;
+    }
+  }
+}
+function reHunt(v) {
+  if (!v.huntSq || (v.rhT && M.t < v.rhT)) return; v.rhT = M.t + 5;
+  const L = squadLead(v.huntSq); if (!L) return;
+  const a = WD.nodeNear(v.x, v.y), b = WD.nodeNear(L.x, L.y); if (a === b) return;
+  const r = WD.route(a, b); if (r && r.length > 1) { setRoute(v, r); v.st = 'hunt'; }
+}
+
+/* ---------- כוחות ידידותיים ---------- */
+function polyCum(pts) { const c = [0]; for (let i = 1; i < pts.length; i++) c.push(c[i - 1] + dist(pts[i - 1].x, pts[i - 1].y, pts[i].x, pts[i].y)); return c; }
+function routePts(r, off) {
+  const N = WD.nodes, pts = [];
+  for (let i = 0; i < r.length; i++) {
+    const A = N[r[i]], P = N[r[Math.max(0, i - 1)]], Q = N[r[Math.min(r.length - 1, i + 1)]];
+    const dx = Q.x - P.x, dy = Q.y - P.y, L = Math.hypot(dx, dy) || 1; pts.push({ x: A.x - dy / L * off, y: A.y + dx / L * off });
+  }
+  return pts;
+}
+function setSquadPath(sq, pts) { sq.pts = pts; sq.cum = polyCum(pts); sq.total = sq.cum[sq.cum.length - 1]; sq.prog = 0; sq.state = 'move'; }
+function pathAt(sq, d) {
+  d = clamp(d, 0, sq.total); const c = sq.cum, p = sq.pts;
+  let i = 1; while (i < c.length - 1 && c[i] < d) i++;
+  const seg = c[i] - c[i - 1] || 1, t = (d - c[i - 1]) / seg;
+  return { x: lerp(p[i - 1].x, p[i].x, t), y: lerp(p[i - 1].y, p[i].y, t), ang: Math.atan2(p[i].y - p[i - 1].y, p[i].x - p[i - 1].x) };
+}
+function mkSquad(pts, n, name, spd) {
+  const sq = { mem: [], hos: [], name, spd, halt: false, quiet: 0, state: 'move', onArrive: null };
+  setSquadPath(sq, pts);
+  for (let i = 0; i < n; i++) sq.mem.push(mkP('friend', 'soldier', pts[0].x + rnd(-1, 1), pts[0].y + rnd(-1, 1), { cd: rnd(1, 2) }));
+  squads.push(sq); return sq;
+}
+const squadLead = sq => sq.mem.find(m => m.alive && !m.inside) || sq.mem.find(m => m.alive) || null;
+const squadAlive = sq => sq.mem.filter(m => m.alive).length;
+function updSquad(sq, dt) {
+  const L = squadLead(sq); if (!L) return;
+  let fire = false;
+  for (const e of ents) {
+    if (!e.alive || e.side !== 'enemy' || e.st !== 'fight') continue;
+    if (dist(e.x, e.y, L.x, L.y) < 160) { fire = true; break; }
+  }
+  if (fire) {
+    if (!sq.halt && sq.state === 'move' && !(sq.push > 0)) { sq.halt = true; sq.haltT = 0; radio(`כוח ׳${sq.name}׳: ${pick(['נתקלנו! תחת אש', 'יורים עלינו!', 'מגע! אנחנו תחת אש'])}`, 'friend', true); }
+    sq.quiet = 0;
+    if (sq.halt) { sq.haltT += dt; if (sq.haltT > 25 && sq.state === 'move') { sq.halt = false; sq.push = 12; radio(`כוח ׳${sq.name}׳: לא יכולים להישאר כאן — מתקדמים תחת אש!`, 'friend', true); } }
+  } else { sq.quiet += dt; if (sq.halt && sq.quiet > 2.5) { sq.halt = false; if (sq.state === 'move') radio(`כוח ׳${sq.name}׳: ממשיכים בתנועה`, 'friend'); } }
+  if (sq.push > 0) sq.push -= dt;
+  if (sq.state === 'move' && !sq.halt) { sq.prog = Math.min(sq.total, sq.prog + sq.spd * dt); if (sq.prog >= sq.total) { sq.state = 'arrived'; if (sq.onArrive) sq.onArrive(sq); } }
+  const col = sq.mem.filter(m => m.alive && !m.inside).concat(sq.hos.filter(h => h.alive && !h.inside));
+  col.forEach((m, k) => {
+    m.moving = false; m.cover = sq.halt || sq.state !== 'move';
+    const p = pathAt(sq, sq.prog - k * 3.2), side = (k % 2 ? 1 : -1) * (sq.halt || sq.state !== 'move' ? 2.8 : 1.1);
+    const tx = p.x + Math.cos(p.ang + Math.PI / 2) * side, ty = p.y + Math.sin(p.ang + Math.PI / 2) * side;
+    moveTo(m, tx, ty, m.side === 'hostage' ? 3.6 : 4.8, dt);
+  });
+  for (const m of sq.mem) {
+    if (!m.alive || m.inside) continue;
+    m.cd -= dt; if (m.cd > 0) continue;
+    m.cd = rnd(0.9, 1.8);
+    const en = nearestEnemy(m.x, m.y, 110);
+    if (en) {
+      m.ang = Math.atan2(en.y - m.y, en.x - m.x); muzzle(m.x, m.y, m.ang);
+      tracer(m.x, m.y, en.x + gauss() * 2, en.y + gauss() * 2, 'f');
+      if (chance(en.k === 'p' ? 0.14 : 0.07)) damage(en, 40, 'friend');
+    }
+  }
+}
+function spawnHunters(sq, n, msg) {
+  const L = squadLead(sq); if (!L) return;
+  const ahead = pathAt(sq, Math.min(sq.total, sq.prog + 80));
+  for (let i = 0; i < n; i++) { const a = rnd(TAU), r = rnd(110, 170), q = WD.freeSpot(ahead.x + Math.cos(a) * r, ahead.y + Math.sin(a) * r, 15); mkP('enemy', chance(.25) ? 'rpg' : 'rifle', q.x, q.y, { st: 'hunt', huntSq: sq }); }
+  if (msg) radio(msg, 'friend', true);
+}
+function spawnTechnical(sq, msg) {
+  const L = squadLead(sq); if (!L) return null;
+  let s = -1;
+  for (let t = 0; t < 100; t++) { const k = WD.randNode(40), N = WD.nodes[k], d = dist(N.x, N.y, L.x, L.y); if (d > 260 && d < 430) { s = k; break; } }
+  if (s < 0) return null;
+  const r = WD.route(s, WD.nodeNear(L.x, L.y)); if (!r || r.length < 2) return null;
+  const v = mkV('enemy', 'technical', 0, 0, { st: 'hunt', huntSq: sq, aa: true, vmax: 12, off: 2.6 });
+  setRoute(v, r); const p = roadPos(v); v.x = p.x; v.y = p.y; v.ang = p.ang;
+  radio(msg || `כוח ׳${sq.name}׳: טנדר חמוש מתקרב אלינו!`, 'friend', true);
+  return v;
+}
+function spawnHeli(p, cb) { const a = rnd(TAU); helis.push({ x: p.x + Math.cos(a) * 520, y: p.y + Math.sin(a) * 520, tx: p.x, ty: p.y, st: 'in', t: 0, rot: 0, ang: a + Math.PI, cb }); }
+function updHelis(dt) {
+  for (const h of helis) {
+    h.rot += dt * 28;
+    if (h.st === 'in') {
+      const d = dist(h.x, h.y, h.tx, h.ty), v = Math.min(d, dt * (d > 90 ? 46 : Math.max(6, d * 0.5)));
+      h.ang = Math.atan2(h.ty - h.y, h.tx - h.x); h.x += Math.cos(h.ang) * v; h.y += Math.sin(h.ang) * v;
+      if (d < 0.6) { h.st = 'land'; h.t = 5; }
+      if (d < 40 && chance(dt * 25)) parts.push({ k: 'smoke', dust: true, x: h.tx + gauss() * 12, y: h.ty + gauss() * 12, vx: gauss() * 8, vy: gauss() * 8, r: rnd(2, 4), gr: 2, t: 0, life: rnd(1.5, 3), a: 0.4 });
+    } else if (h.st === 'land') { h.t -= dt; if (h.t <= 0) { h.st = 'out'; if (h.cb) h.cb(); } }
+    else { h.x += Math.cos(h.ang) * dt * 40; h.y += Math.sin(h.ang) * dt * 40; }
+  }
+}
+
+/* ---------- נ״מ ואיומים על הרחפן ---------- */
+function updAA(e, dt) {
+  if (!drone || drone.down || M.over) return;
+  const rng = 300 * drone.stealth, d = dist(e.x, e.y, drone.x, drone.y), low = drone.altF > 0.85;
+  if (e.burst > 0) {
+    e.burst -= dt; e.ft = (e.ft || 0) - dt;
+    if (e.ft <= 0) {
+      e.ft = 0.09; const a = Math.atan2(drone.y - e.y, drone.x - e.x) + gauss() * 0.08;
+      tracer(e.x, e.y, e.x + Math.cos(a) * 95, e.y + Math.sin(a) * 95, 'aa');
+      if (low && d < rng && chance(0.11 * M.Df.acc * upv('ew') * drone.stealth)) hitDrone(rnd(3, 5), 'מקלע נ״מ');
+    }
+    return;
+  }
+  e.aacd = (e.aacd === undefined ? rnd(4, 10) : e.aacd) - dt;
+  if (e.aacd <= 0 && d < rng * (low ? 1 : 1.3)) {
+    e.burst = rnd(1, 2); e.aacd = rnd(3, 6) / M.Df.acc;
+    if (onScreen(e.x, e.y, 0)) SFX.far();
+    if (!M.flags.aaWarn) { M.flags.aaWarn = true; radio('ירי נ״מ לעבר הרחפן! טפסו לגובה רב או חסלו את המקלע', 'bad', true); }
+    M.aaAlert = 2;
+  }
+}
+function tryManpads(e, dt) {
+  if (!drone || drone.down || e.inside || M.over) return;
+  if (e.mcd === undefined) { e.mcd = rnd(20, 40); e.ammo = M.diff >= 4 ? 3 : 2; }
+  if (e.ammo <= 0) return;
+  e.mcd -= dt; if (e.mcd > 0) return;
+  const rng = 380 * drone.stealth * (drone.altF < 0.85 ? 0.85 : 1);
+  if (dist(e.x, e.y, drone.x, drone.y) > rng) { e.mcd = 1; return; }
+  e.mcd = rnd(35, 55) / M.Df.acc; e.ammo--;
+  if (!e.marked) { e.marked = true; later(1.2, () => radio('מקור השיגור סומן — חסלו את צוות טיל הכתף', 'warn')); }
+  emiss.push({ sx: e.x, sy: e.y, x: e.x, y: e.y, t: 0, T: upv('maws') ? 5 : 3.4, flared: drone.flareT > 0 });
+  SFX.launch(); radio('טיל באוויר! הפעילו נוריות!', 'bad', true); $('objBox').classList.add('hidden');
+  for (let i = 0; i < 6; i++) parts.push({ k: 'smoke', x: e.x + gauss(), y: e.y + gauss(), vx: gauss() * 2, vy: gauss() * 2, r: 1.2, gr: 1.4, t: 0, life: rnd(2, 4), a: 0.6 });
+  if (drone.D.autoFlare) later(0.7, () => deployFlares(true));
+}
+function updEmiss(dt) {
+  for (let i = emiss.length - 1; i >= 0; i--) {
+    const m = emiss[i]; m.t += dt; const p = Math.pow(Math.min(1, m.t / m.T), 1.3);
+    m.x = lerp(m.sx, drone.x, p); m.y = lerp(m.sy, drone.y, p);
+    if (chance(dt * 45)) parts.push({ k: 'trail', x: m.x, y: m.y, vx: 0, vy: 0, r: 1.1, gr: 1.4, t: 0, life: 3.5, a: 0.55 });
+    if (m.t >= m.T) {
+      emiss.splice(i, 1); if (drone.down || M.over) continue;
+      if (m.flared && chance(upv('maws') ? 0.97 : 0.85)) radio('הטיל הוטעה ע״י הנוריות', 'good');
+      else hitDrone(rnd(35, 45), 'טיל כתף');
+    }
+  }
+  if (emiss.length) { M.alarmT = (M.alarmT || 0) - dt; if (M.alarmT <= 0) { SFX.alarm(); M.alarmT = 0.45; } }
+}
+function deployFlares(auto) {
+  if (!M || M.over || drone.down) return;
+  if (drone.flares <= 0) { if (!auto) radio('נגמרו הנוריות', 'warn'); return; }
+  if (auto && drone.flareT > 0.5) return;
+  drone.flares--; drone.flareT = 2.2; emiss.forEach(m => m.flared = true); SFX.flare(); flashT = Math.max(flashT, 0.12);
+  $('flareN').textContent = drone.flares;
+  if (auto) radio('נוריות שוגרו אוטומטית', 'good');
+}
+function hitDrone(a, src) {
+  if (drone.down || M.over) return;
+  drone.hp -= a; staticT = Math.max(staticT, 0.45); shake = Math.min(1.5, shake + 0.6); SFX.hit();
+  if (drone.hp <= 0) { drone.hp = 0; drone.down = true; staticT = 99; humStop(); say('הרחפן הופל'); endMission(false, `הרחפן הופל (${src})`); return; }
+  if (!M.flags['h_' + src]) { M.flags['h_' + src] = true; radio(`הרחפן נפגע מ${src}!`, 'bad'); }
+  if (drone.hp < drone.mhp * 0.3 && !M.flags.lowhp) { M.flags.lowhp = true; radio('נזק כבד לרחפן! התרחקו מהאיום', 'bad', true); }
+}
+
+/* ---------- נזק, פיצוצים ואפקטים ---------- */
+function damage(e, a, src) { if (!e.alive || e.gone) return; e.hp -= a; e.hitT = 0.3; if (e.hp <= 0) kill(e, src); }
+function kill(e, src) {
+  if (!e.alive) return;
+  e.alive = false; e.hp = 0; e.deadT = 0; e.killedBy = src; e.moving = false;
+  if (e.k !== 'p') {
+    e.burn = rnd(15, 30); fxExplosion(e.x, e.y, e.k === 'v' ? 6 : 5, true);
+    if (e.role === 'cache' || e.role === 'launcher' || e.role === 'crates') for (let i = rint(2, 4); i > 0; i--) later(rnd(0.3, 2.2), () => explode(e.x + gauss() * 6, e.y + gauss() * 6, 4, 50, { src: 'sec', bdmg: 0.3 }));
+  }
+  if (!M) return;
+  if (src === 'player') {
+    if (e.side === 'civ') { M.stats.civ++; radio(e.k === 'v' ? 'נפגע רכב אזרחי' : 'נפגעו אזרחים', 'warn'); }
+    else if (e.side === 'friend') { M.stats.ff++; radio('פגיעה בכוחותינו!', 'bad', true); }
+    else if (e.side === 'hostage') radio('חטוף נפגע מהירי שלנו!', 'bad', true);
+    else if (e.side === 'enemy') M.stats.kills++;
+  }
+  if (e.side === 'friend') { M.stats.friendDead++; if (src !== 'player') radio(pick(['יש לנו נפגע!', 'לוחם נפגע!', 'נפגע בכוח, ממשיכים לפעול']), 'friend'); }
+  if (e.side === 'hostage') M.stats.hostDead++;
+  if (HOOK().onKill) HOOK().onKill(e, src);
+}
+function explode(x, y, Rr, dmg, o) {
+  o = o || {}; const src = o.src || 'player', bd = o.bdmg === undefined ? 1 : o.bdmg, lt = o.light === undefined ? 1 : o.light;
+  if (o.small) fxPuff(x, y); else fxExplosion(x, y, Rr);
+  const ruined = [];
+  for (const b of WD.bNear(x, y, Rr)) {
+    if (b.ruined) continue;
+    const inB = x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h, a = dmg * bd * (inB ? 1 : 0.45);
+    b.hp -= a; b.hitT = 0.5;
+    if (b.hp <= 0) { ruinBuilding(b); ruined.push(b); fxDust(b); SFX.boom(14); }
+  }
+  for (const e of ents) {
+    if (!e.alive || e.gone) continue;
+    if (e.inside) { const b = e.inside; if (ruined.includes(b) || b.ruined) { kill(e, src); continue; } if (circRect(x, y, Rr, b)) damage(e, dmg * 0.28 * Math.min(1.5, bd), src); continue; }
+    const d = dist(x, y, e.x, e.y) - e.r;
+    if (d < Rr) { const f = d <= 0 ? 1 : 1 - d / Rr; let a = dmg * (0.25 + 0.75 * f); if (e.k !== 'p') a *= e.hard ? bd : lt; damage(e, a, src); }
+    else if (e.k === 'p' && d < Rr * 6 + 20 && !o.small) panic(e, x, y);
+    else if (e.k === 'p' && o.small && d < 12) panic(e, x, y);
+  }
+  if (M && HOOK().onRuin) for (const b of ruined) HOOK().onRuin(b, src);
+}
+function fxExplosion(x, y, Rr, quiet) {
+  parts.push({ k: 'flash', x, y, r: Rr * 2.4, t: 0, life: 0.28 });
+  parts.push({ k: 'ring', x, y, r: Rr * 0.4, vr: Rr * 7, t: 0, life: 0.4 });
+  const n = Math.min(36, 6 + Rr * 2);
+  for (let i = 0; i < n; i++) parts.push({ k: 'fire', x: x + gauss() * Rr * 0.3, y: y + gauss() * Rr * 0.3, vx: gauss() * Rr * 1.4, vy: gauss() * Rr * 1.4, r: rnd(Rr * 0.25, Rr * 0.55), t: 0, life: rnd(0.35, 0.85) });
+  for (let i = 0; i < n * 0.8; i++) parts.push({ k: 'smoke', x: x + gauss() * Rr * 0.4, y: y + gauss() * Rr * 0.4, vx: gauss() * Rr * 0.5, vy: gauss() * Rr * 0.5, r: rnd(Rr * 0.35, Rr * 0.7), gr: Rr * 0.22 + 0.4, t: 0, life: rnd(4, 10), a: rnd(0.45, 0.75) });
+  for (let i = 0; i < n * 0.6; i++) parts.push({ k: 'debris', x, y, vx: gauss() * Rr * 3.5, vy: gauss() * Rr * 3.5, t: 0, life: rnd(0.5, 1.2) });
+  decals.push({ x, y, r: Rr * 0.95, t: 0 }); if (decals.length > 90) decals.shift();
+  const vis = onScreen(x, y, 80);
+  if (!quiet || vis) SFX.boom(Rr);
+  if (vis) { shake = Math.min(1.2, shake + Rr / 16); flashT = Math.max(flashT, Math.min(0.22, Rr / 70)); }
+  trimParts();
+}
+function fxPuff(x, y) {
+  for (let i = 0; i < 3; i++) parts.push({ k: 'dust', x: x + gauss(), y: y + gauss(), vx: gauss() * 2, vy: gauss() * 2, r: rnd(0.5, 1), gr: 1.2, t: 0, life: rnd(0.6, 1.2), a: 0.6 });
+  parts.push({ k: 'spark', x, y, t: 0, life: 0.08, r: 1 });
+  trimParts();
+}
+function fxDust(b) {
+  const cx = b.x + b.w / 2, cy = b.y + b.h / 2, n = Math.min(40, 10 + b.w * b.h / 25);
+  for (let i = 0; i < n; i++) parts.push({ k: 'smoke', dust: true, x: cx + rnd(-b.w / 2, b.w / 2), y: cy + rnd(-b.h / 2, b.h / 2), vx: gauss() * 3, vy: gauss() * 3, r: rnd(3, 6), gr: 2, t: 0, life: rnd(6, 14), a: 0.6 });
+}
+function trimParts() { if (parts.length > 1400) parts.splice(0, parts.length - 1400); }
+function muzzle(x, y, a) { parts.push({ k: 'muzzle', x: x + Math.cos(a) * 1.2, y: y + Math.sin(a) * 1.2, t: 0, life: 0.07, r: 1.2 }); }
+function tracer(x0, y0, x1, y1, kind) { tracers.push({ x0, y0, x1, y1, t: 0, life: kind === 'aa' ? 0.3 : 0.16, kind }); if (tracers.length > 300) tracers.shift(); }
+function updParts(dt) {
+  let j = 0;
+  for (let i = 0; i < parts.length; i++) {
+    const p = parts[i]; p.t += dt; if (p.t >= p.life) continue;
+    if (p.vx !== undefined) { const f = Math.exp(-dt * (p.k === 'smoke' || p.k === 'trail' ? 1.2 : 3)); p.vx *= f; p.vy *= f; p.x += p.vx * dt; p.y += p.vy * dt; }
+    if (p.k === 'smoke' || p.k === 'trail' || p.k === 'dust') { p.x += WIND.x * dt; p.y += WIND.y * dt; p.r += (p.gr || 0) * dt; }
+    if (p.k === 'ring') p.r += p.vr * dt;
+    parts[j++] = p;
+  }
+  parts.length = j;
+  j = 0; for (let i = 0; i < tracers.length; i++) { const t = tracers[i]; t.t += dt; if (t.t < t.life) tracers[j++] = t; } tracers.length = j;
+}
+function updRockets(dt) {
+  for (let i = rockets.length - 1; i >= 0; i--) {
+    const r = rockets[i]; r.t += dt; const p = Math.min(1, r.t / r.T);
+    r.x = lerp(r.sx, r.tx, p); r.y = lerp(r.sy, r.ty, p);
+    if (chance(dt * 30)) parts.push({ k: 'trail', x: r.x, y: r.y, vx: 0, vy: 0, r: 0.6, gr: 0.8, t: 0, life: 1.6, a: 0.5 });
+    if (p >= 1) { rockets.splice(i, 1); explode(r.x, r.y, 4, 70, { src: 'enemy', bdmg: 0.4 }); }
+  }
+}
+
+/* ---------- ירי של השחקן ---------- */
+const curW = () => loadout[selW];
+const aimPoint = () => ({ x: cam.x + sway.x, y: cam.y + sway.y });
+function canTrack(w) { const W = WEAPONS[w]; return !!(W.track || (W.laser && upv('laser'))); }
+function lockCandidate(px) {
+  const sc = scaleNow(), a = aimPoint(); let best = null, bd = (px || 28) * DPR / sc;
+  for (const e of ents) { if (!e.alive || e.inside || e.gone || e.side === 'friend' || e.side === 'hostage') continue; const d = dist(e.x, e.y, a.x, a.y) - e.r * 0.5; if (d < bd) { bd = d; best = e; } }
+  return best;
+}
+function dangerClose(x, y, r) {
+  for (const e of ents) if (e.alive && !e.inside && !e.gone && (e.side === 'friend' || e.side === 'hostage') && dist(e.x, e.y, x, y) < r + 7) return 'כוחותינו';
+  if (M && M.type === 'rescue' && M.hb && !M.hb.ruined && circRect(x, y, r + 3, M.hb)) return 'בניין החטופים';
+  return null;
+}
+function fire(auto) {
+  if (!M || M.over || drone.down || paused) return;
+  const s = curW(); if (!s) return;
+  if (s.n <= 0) { if (!auto) radio('אין תחמושת מסוג זה — החליפו נשק', 'warn'); return; }
+  if (fireCd > 0) return;
+  const W = WEAPONS[s.w], a = aimPoint();
+  if (W.radius > 2) {
+    const dc = dangerClose(a.x, a.y, W.radius);
+    if (dc && performance.now() - confirmAt > 2500) { confirmAt = performance.now(); radio(`זהירות: ${dc} בטווח הפגיעה! לחצו שוב לאישור`, 'bad'); SFX.alarm(); return; }
+  }
+  confirmAt = 0;
+  const lock = canTrack(s.w) ? lockCandidate() : null;
+  const T = W.flight * (drone.altF < 0.85 ? 1.4 : 1);
+  shots.push({ w: s.w, W, x: a.x, y: a.y, lock, t: T, T });
+  s.n--; fireCd = W.cd; M.stats.used[s.w] = (M.stats.used[s.w] || 0) + 1;
+  if (W.auto) SFX.gun(); else if (s.w === 'grenade') SFX.drop(); else SFX.launch();
+  if (lock && !W.auto) SFX.lock();
+  updWeapRow();
+}
+function callAir() {
+  if (!M || M.over || drone.down) return;
+  if (S.air <= 0) { radio('אין תקיפות מטוס במלאי — אפשר לקנות בחנות', 'warn'); return; }
+  const a = aimPoint(), dc = dangerClose(a.x, a.y, 24);
+  if (dc && performance.now() - confirmAt > 2500) { confirmAt = performance.now(); radio(`זהירות: ${dc} בטווח! לחצו שוב לאישור`, 'bad'); SFX.alarm(); return; }
+  confirmAt = 0; S.air--; M.airUsed = (M.airUsed || 0) + 1; $('airN').textContent = S.air;
+  shots.push({ w: 'air', W: { radius: 24, dmg: 520, bdmg: 2, light: 1.2, spread: 2 }, x: a.x, y: a.y, lock: null, t: 7, T: 7, air: true });
+  radio('מטוס בדרך — פגיעה בעוד 7 שניות. התרחקו מהאזור!', 'good', true);
+}
+function updShots(dt) {
+  for (let i = shots.length - 1; i >= 0; i--) {
+    const s = shots[i]; s.t -= dt;
+    if (s.lock) { if (s.lock.alive && !s.lock.inside) { s.x = s.lock.x; s.y = s.lock.y; } else s.lock = null; }
+    if (s.t <= 0) { shots.splice(i, 1); impact(s); }
+  }
+}
+function impact(s) {
+  const W = s.W; let sp = W.spread * (s.air ? 1 : upv('stab')) * (drone && drone.altF < 0.85 && !s.air ? 1.3 : 1); if (s.lock) sp *= 0.3;
+  const x = s.x + gauss() * sp, y = s.y + gauss() * sp;
+  explode(x, y, W.radius, W.dmg, { src: 'player', bdmg: W.bdmg, light: W.light, small: W.radius <= 2 });
+}
+
+/* ---------- סימון וזיהוי ---------- */
+function doMark() {
+  if (!M || M.over) return;
+  const a = aimPoint(), sc = scaleNow(), z = zoomEff();
+  let best = null, bd = 30 * DPR / sc;
+  for (const e of ents) { if (!e.alive || e.inside || e.gone) continue; const d = dist(e.x, e.y, a.x, a.y) - e.r; if (d < bd) { bd = d; best = e; } }
+  const b = WD.bAt(a.x, a.y, 0.5);
+  if (best && b && bd > 9 * DPR / sc) best = null;   // מכוונים לתוך מבנה — מסמנים את המבנה, אלא אם מישהו ממש בכוונת
+  if (best) {
+    if (best.k === 'p' && z < 4) { radio('קטן מדי לזיהוי — הגדילו זום (לפחות x4)', 'warn'); return; }
+    if (best.k !== 'p' && z < 2) { radio('הגדילו זום כדי לזהות', 'warn'); return; }
+    markEnt(best, false); return;
+  }
+  if (b) {
+    if (z < 2) { radio('הגדילו זום כדי לבדוק את המבנה', 'warn'); return; }
+    const lbl = HOOK().onMarkB ? HOOK().onMarkB(b) : null; if (lbl === 'skip') return;
+    b.label = lbl || 'אין ממצאים'; b.labelT = 7; SFX.lock();
+    if (!lbl) radio('המבנה נבדק — לא נמצא ממצא חשוד'); else if (M.type === 'strike') radio('זוהה: ' + lbl, 'good');
+    return;
+  }
+  radio('אין מטרה בכוונת — כוונו על אדם, רכב או מבנה', 'warn');
+}
+function markEnt(e, silent) {
+  const was = e.marked; e.marked = true;
+  if (!silent) { SFX.lock(); radio((was ? 'מסומן: ' : 'זוהה: ') + label(e), e.side === 'enemy' ? 'bad' : e.side === 'civ' ? '' : 'friend'); }
+  if (HOOK().onMark) HOOK().onMark(e, silent);
+}
+function autoId(dt) {
+  aiT -= dt; if (aiT > 0) return; aiT = 0.5;
+  if (zoomEff() < 3) return;
+  for (const e of ents) {
+    if (!e.alive || e.inside || e.marked || e.gone || e.side !== 'enemy' || !onScreen(e.x, e.y, 0)) continue;
+    if (e.k === 'p' && !e.armed) continue;
+    if (e.role === 'target') continue;
+    markEnt(e, true);
+  }
+}
+
+/* ---------- אוכלוסייה כללית ---------- */
+function populateCommon() {
+  const Z = ZONES[M.zone], night = M.tod === 'night';
+  const civN = Math.round(Z.civ * (night ? 0.35 : 1));
+  for (let i = 0; i < civN; i++) { const ed = WD.randEdge(0.2); if (!ed) break; const p = mkP('civ', 'civ', 0, 0, { st: 'walk' }); placeOnEdge(p, ed, rnd(), (chance(.5) ? 1 : -1) * rnd(4.6, 6.2)); }
+  for (let i = 0; i < civN / 6; i++) {
+    const b = pick(WD.B); if (!b) continue;
+    const q = boundaryToward(b, b.x + b.w / 2 + rnd(-30, 30), b.y + b.h / 2 + rnd(-30, 30));
+    for (let k = rint(1, 3); k > 0; k--) mkP('civ', 'civ', q.x + rnd(-2, 2), q.y + rnd(-2, 2), { st: 'stand', t: rnd(1, 5) });
+  }
+  const carN = Math.round(Z.cars * (night ? 0.5 : 1));
+  for (let i = 0; i < carN; i++) { const ed = WD.randEdge(0); if (!ed) break; const v = mkV('civ', 'car', 0, 0, { st: 'drive' }); placeOnEdge(v, ed, rnd(), 2.6); }
+}
+function placeAA(cx, cy, rad) {
+  const lv = M.Df.aa, hm = [0, 1, 2, 2, 3][lv], mp = [0, 0, 1, 2, 3][lv];
+  for (let i = 0; i < hm; i++) { const p = WD.openSpot(cx + rnd(-rad, rad), cy + rnd(-rad, rad), 50); mkS('hmg', p.x, p.y); mkP('enemy', 'rifle', p.x + 2.2, p.y + 1.6, { st: 'post' }); }
+  for (let i = 0; i < mp; i++) { const p = WD.freeSpot(cx + rnd(-rad, rad), cy + rnd(-rad, rad), 50); mkP('enemy', 'manpads', p.x, p.y, { st: 'post', passive: true }); }
+}
+
+/* =====================================================================
+   סוגי משימות
+   ===================================================================== */
+const MIS = {};
+
+/* ----- תקיפה ----- */
+MIS.strike = {
+  setup() {
+    const c = WD.findArea(0.3, 0.95, 320); M.area = c; M.focus = c;
+    const cls = maxOwnedCls(), kinds = ['launcher', 'launcher', 'technical', 'cache'];
+    if (cls >= 2) kinds.push('depot', 'depot'); if (cls >= 3) kinds.push('shaft');
+    const n = 2 + (M.diff >= 2 ? 1 : 0) + (M.diff >= 4 ? 1 : 0), pts = []; M.targets = [];
+    for (let i = 0; i < n; i++) {
+      const kind = pick(kinds); let tg = null;
+      for (let tr = 0; tr < 60 && !tg; tr++) {
+        const a = rnd(TAU), r = rnd(30, 250), x = c.x + Math.cos(a) * r, y = c.y + Math.sin(a) * r;
+        if (!WD.inside(x, y, 90) || pts.some(q => dist(q.x, q.y, x, y) < 110)) continue;
+        if (kind === 'depot') {
+          const b = WD.bNear(x, y, 35).find(b => !b.ruined && !b.tgt && b.w * b.h > 140); if (!b) continue;
+          b.tgt = true; b.mhp = b.hp = Math.round(330 + M.diff * 30);
+          tg = { k: 'b', b, role: 'depot', x: b.x + b.w / 2, y: b.y + b.h / 2, alive: true };
+          const p = boundaryToward(b, x + rnd(-20, 20), y + rnd(-20, 20)); mkS('crates', p.x, p.y);
+        } else if (kind === 'technical') {
+          const q = WD.nearestRoad(x, y); if (!q) continue;
+          tg = mkV('enemy', 'technical', 0, 0, { st: 'park', aa: M.diff >= 1 }); placeOnEdge(tg, q, q.t, 3.4);
+        } else { const q = WD.openSpot(x, y, 30); tg = mkS(kind, q.x, q.y); }
+      }
+      if (!tg) continue;
+      pts.push({ x: tg.x, y: tg.y }); tg.obj = true;
+      const ir = 38 + M.diff * 12, a = rnd(TAU), o = rnd(0, ir * 0.75);
+      tg.intel = { x: tg.x + Math.cos(a) * o, y: tg.y + Math.sin(a) * o, r: ir };
+      M.targets.push(tg);
+      const g = Math.round((rint(1, 2) + M.diff * 0.6) * M.Df.en);
+      for (let k = 0; k < g; k++) { const q = WD.freeSpot(tg.x + rnd(-16, 16), tg.y + rnd(-16, 16), 6); const e = mkP('enemy', chance(0.2) && M.diff >= 1 ? 'rpg' : 'rifle', q.x, q.y, { st: 'post' }); if (chance(0.4)) e.patrol = { x: q.x + rnd(-14, 14), y: q.y + rnd(-14, 14) }; }
+    }
+    for (let k = Math.round(3 * M.Df.en); k > 0; k--) { const q = WD.freeSpot(c.x + rnd(-220, 220), c.y + rnd(-220, 220), 20); mkP('enemy', 'rifle', q.x, q.y, { st: 'post', patrol: { x: q.x + rnd(-25, 25), y: q.y + rnd(-25, 25) } }); }
+    placeAA(c.x, c.y, 230);
+    M.timeLeft = (150 + M.targets.length * 45) * M.Df.time * upv('battery');
+    M.objs = M.targets.map((t, i) => ({ id: 't' + i, text: `${TNAME[t.role]} — יעד ${i + 1}` }));
+    if (M.diff >= 2) { M.objs.push({ id: 'hvt', text: 'בונוס: חיסול מפקד בכיר שנמלט', opt: true, hidden: true }); later(rnd(35, 65), () => MIS.strike.hvt()); }
+    M.intro = `השמידו ${M.targets.length} יעדים. המיקום המדויק לא ידוע — חפשו בתוך העיגולים הכתומים.`;
+  },
+  hvt() {
+    if (M.over || M.endAt) return;
+    const near = M.targets[0] || M.area, q = WD.nearestRoad(near.x + rnd(-60, 60), near.y + rnd(-60, 60)); if (!q) return;
+    let far = -1; for (let t = 0; t < 80; t++) { const k = WD.randNode(60), N = WD.nodes[k]; if (dist(N.x, N.y, q.x, q.y) > 650) { far = k; break; } }
+    if (far < 0) return;
+    const r = WD.route(q.na, far); if (!r || r.length < 2) return;
+    const v = mkV('enemy', 'hvt', 0, 0, { vmax: 10, st: 'drive', marked: true, hvt: true, off: 2.6 });
+    setRoute(v, r); const p = roadPos(v); v.x = p.x; v.y = p.y; v.ang = p.ang;
+    v.onEnd = () => { if (v.alive && !M.over) { setObj('hvt', { fail: true }); radio('המפקד נמלט מהגזרה', 'warn'); v.alive = false; v.gone = true; if (M.endAt) M.endAt = Math.min(M.endAt, M.t + 1.5); } };
+    M.hvt = v; setObj('hvt', { hidden: false });
+    radio('מודיעין: מפקד בכיר נמלט ברכב לבן — מסומן במסגרת צהובה. חסלו אותו לפני שייצא מהגזרה!', 'warn', true);
+  },
+  update() {
+    let left = 0;
+    M.targets.forEach((t, i) => {
+      const dead = t.k === 'b' ? t.b.ruined : !t.alive, o = M.objs.find(o => o.id === 't' + i);
+      if (dead && !o.done) { o.done = true; renderObjs(); radio(`${TNAME[t.role]} הושמד!`, 'good'); }
+      if (!dead) left++;
+    });
+    if (!left && !M.endAt) {
+      const hv = M.hvt && M.hvt.alive && !M.hvt.gone;
+      M.endAt = M.t + (hv ? 20 : 1.5);
+      if (hv) radio('כל היעדים הושמדו! יש עוד 20 שניות לחסל את המפקד לבונוס', 'good');
+    }
+    if (M.endAt && M.t >= M.endAt) endMission(true);
+  },
+  onKill(e) {
+    if (e.hvt && !M.over) { setObj('hvt', { done: true }); M.bonus.push({ text: 'חיסול מפקד בכיר', f: 0.35 }); radio('המפקד חוסל!', 'good', true); if (M.endAt) M.endAt = Math.min(M.endAt, M.t + 1.5); }
+  },
+  onMarkB(b) { return b.tgt ? 'מחסן אמצעי לחימה' : null; },
+};
+
+/* ----- סיוע לכוחות ----- */
+MIS.cas = {
+  setup() {
+    let best = null;
+    for (let t = 0; t < 90 && !best; t++) {
+      const a = WD.randNode(140), b = WD.randNode(140), A = WD.nodes[a], B = WD.nodes[b], d = dist(A.x, A.y, B.x, B.y);
+      if (d < 560 || d > 950) continue;
+      const r = WD.route(a, b); if (!r || r.length < 4) continue;
+      const pts = routePts(r, 3.2), c = polyCum(pts); if (c[c.length - 1] > 1250) continue;
+      best = pts;
+    }
+    if (!best) { const a = WD.randNode(140), b = WD.randNode(140); best = routePts(WD.route(a, b) || [a, b], 3.2); }
+    const sq = mkSquad(best, 6, 'נמר', 3.3); M.sq = sq; M.focus = { x: best[0].x, y: best[0].y };
+    const mid = pathAt(sq, sq.total / 2); M.area = mid;
+    const k = 2 + M.diff;
+    for (let i = 0; i < k; i++) {
+      const d = sq.total * (0.14 + 0.8 * (i + rnd(0.15, 0.85)) / k), p = pathAt(sq, d), side = chance(.5) ? 1 : -1;
+      const n = Math.round((rint(2, 3) + Math.floor(M.diff / 2)) * Math.min(1.3, M.Df.en));
+      for (let j = 0; j < n; j++) {
+        const o = rnd(24, 52) * side, al = rnd(-22, 22);
+        const q = WD.freeSpot(p.x + Math.cos(p.ang) * al + Math.cos(p.ang + Math.PI / 2) * o, p.y + Math.sin(p.ang) * al + Math.sin(p.ang + Math.PI / 2) * o, 6);
+        mkP('enemy', j === 0 && M.diff >= 2 && chance(.6) ? 'rpg' : 'rifle', q.x, q.y, { st: 'post' });
+      }
+    }
+    M.techAt = M.diff >= 2 ? sq.total * rnd(0.4, 0.6) : -1;
+    M.huntAt = M.diff >= 1 ? sq.total * rnd(0.25, 0.45) : -1;
+    placeAA(mid.x, mid.y, 260);
+    M.maxDead = [3, 3, 2, 2, 1][M.diff];
+    M.timeLeft = (sq.total / sq.spd * 1.6 + 75) * M.Df.time * upv('battery');
+    M.objs = [{ id: 'reach', text: 'ליוו את כוח ׳נמר׳ עד נקודת היעד' }, { id: 'loss', text: `שמרו על הכוח: עד ${M.maxDead} הרוגים (0)` }, { id: 'clean', text: 'בונוס: בלי פגיעה באזרחים', opt: true }];
+    M.intro = 'כוח ׳נמר׳ יוצא לדרך בציר הכחול. סרקו לפניו וחסלו מארבים לפני שהוא נתקל בהם.';
+  },
+  update() {
+    const sq = M.sq;
+    if (M.huntAt > 0 && sq.prog >= M.huntAt) { M.huntAt = -1; spawnHunters(sq, 2 + M.diff, 'כוח ׳נמר׳: חמושים מתקרבים מהצד!'); }
+    if (M.techAt > 0 && sq.prog >= M.techAt) { M.techAt = -1; spawnTechnical(sq); }
+    const dead = M.stats.friendDead, o = M.objs.find(o => o.id === 'loss'), txt = `שמרו על הכוח: עד ${M.maxDead} הרוגים (${dead})`;
+    if (o.text !== txt) { o.text = txt; renderObjs(); }
+    if (dead > M.maxDead) { setObj('loss', { fail: true }); return endMission(false, 'הכוח ספג אבדות כבדות מדי'); }
+    if (sq.state === 'arrived') {
+      setObj('reach', { done: true }); setObj('loss', { done: true });
+      if (M.stats.civ === 0) { setObj('clean', { done: true }); M.bonus.push({ text: 'בלי פגיעה באזרחים', f: 0.15 }); }
+      if (dead === 0) M.bonus.push({ text: 'בלי אבדות בכוח', f: 0.2 });
+      endMission(true);
+    }
+  },
+};
+
+/* ----- חילוץ חטופים ----- */
+MIS.rescue = {
+  setup() {
+    let c = WD.findArea(0.3, 0.95, 320), cands = [];
+    const want = 3 + (M.diff >= 2 ? 1 : 0) + (M.diff >= 4 ? 1 : 0);
+    for (let t = 0; t < 8 && cands.length < 3; t++) {
+      cands = [];
+      const all = shuffle(WD.bNear(c.x, c.y, 220).filter(b => b.w * b.h >= 110 && WD.inside(b.x, b.y, 80)));
+      for (const b of all) { if (cands.every(o => dist(o.x, o.y, b.x, b.y) > 50)) cands.push(b); if (cands.length >= want) break; }
+      if (cands.length < 3) c = WD.findArea(0.2, 1, 320);
+    }
+    M.area = c; M.focus = c;
+    const H = pick(cands); M.hb = H;
+    M.cands = cands.map((b, i) => ({ b, letter: 'אבגדה'[i], state: 0 }));
+    const nh = rint(2, 4); M.hostN = nh;
+    const cx = H.x + rnd(1.5, H.w * 0.45), cy = H.y + rnd(1.5, H.h * 0.45);
+    for (let i = 0; i < nh; i++) { const e = mkP('hostage', 'hostage', cx, cy, { stay: true, still: true, armed: false }); enter(e, H, 1e9); e.x = clamp(cx + rnd(-1.5, 1.5), H.x + .8, H.x + H.w - .8); e.y = clamp(cy + rnd(-1.5, 1.5), H.y + .8, H.y + H.h - .8); }
+    for (let i = 0; i < 2; i++) { const e = mkP('enemy', 'guard', H.x + H.w / 2, H.y + H.h / 2, { stay: true, inGuard: true }); enter(e, H, 1e9); }
+    const g = Math.round((2 + M.diff) * Math.min(1.4, M.Df.en));
+    const ring = a => { const p = boundaryToward(H, H.x + H.w / 2 + Math.cos(a) * 80, H.y + H.h / 2 + Math.sin(a) * 80); return { x: p.x + Math.cos(a) * rnd(2, 9), y: p.y + Math.sin(a) * rnd(2, 9) }; };
+    for (let i = 0; i < g; i++) { const a = rnd(TAU), q = ring(a), e = mkP('enemy', 'guard', q.x, q.y, { st: 'post' }); if (chance(.35)) e.patrol = ring(a + rnd(-0.8, 0.8)); }
+    let armedDecoy = M.diff >= 2;
+    for (const cd of M.cands) {
+      if (cd.b === H) continue; const b = cd.b;
+      for (let i = rint(2, 4); i > 0; i--) { const e = mkP('civ', 'civ', b.x + b.w / 2, b.y + b.h / 2, { stay: true }); enter(e, b, 1e9); e.x = rnd(b.x + 1, b.x + b.w - 1); e.y = rnd(b.y + 1, b.y + b.h - 1); }
+      if (armedDecoy) { armedDecoy = false; for (let i = 0; i < 2; i++) { const a = rnd(TAU), p = boundaryToward(b, b.x + b.w / 2 + Math.cos(a) * 80, b.y + b.h / 2 + Math.sin(a) * 80); mkP('enemy', 'rifle', p.x + Math.cos(a) * 3, p.y + Math.sin(a) * 3, { st: 'post' }); } }
+      else if (chance(0.6)) { const p = boundaryToward(b, b.x - 30, b.y + b.h / 2); for (let i = rint(1, 3); i > 0; i--) mkP('civ', 'civ', p.x + rnd(-2, 2), p.y + rnd(-2, 2), { st: 'stand', t: rnd(1, 5) }); }
+    }
+    placeAA(c.x, c.y, 240);
+    M.phase = 'find';
+    M.timeLeft = (110 + M.cands.length * 22) * M.Df.time * upv('battery');
+    M.objs = [{ id: 'find', text: 'אתרו את בניין החטופים וסמנו אותו' }, { id: 'cover', text: 'חפו על כוח החילוץ בדרך לבניין' }, { id: 'ext', text: 'ליוו את הכוח והחטופים למסוק' }, { id: 'safe', text: `החטופים בחיים (${nh}/${nh})` }];
+    M.intro = `${nh} חטופים באחד מ־${M.cands.length} המבנים המסומנים. חפשו שומרים חמושים בחוץ` +
+      (upv('thermal') ? ', ובתרמי — אנשים שלא זזים בתוך מבנה' : '') + '. כוונו על הבניין ולחצו ״סמן״.';
+  },
+  onMarkB(b) {
+    if (M.phase !== 'find') return null;
+    const c = M.cands.find(c => c.b === b);
+    if (!c) { radio('המבנה הזה לא ברשימת החשודים', 'warn'); return 'skip'; }
+    if (c.state === 1) { radio('המבנה כבר נבדק — שלילי', 'warn'); return 'skip'; }
+    if (b === M.hb) { c.state = 2; setObj('find', { done: true }); radio(`אומת! החטופים בבניין ${c.letter}. כוח החילוץ יוצא לדרך — חפו עליו`, 'good', true); MIS.rescue.launch(); return 'חטופים'; }
+    c.state = 1; M.timeLeft -= 20; radio(`שלילי — אין סימני חטופים בבניין ${c.letter}. הפסדנו 20 שניות`, 'warn'); return 'skip';
+  },
+  launch() {
+    const H = M.hb, hc = { x: H.x + H.w / 2, y: H.y + H.h / 2 };
+    let s = -1; for (let t = 0; t < 150; t++) { const k = WD.randNode(60), N = WD.nodes[k], d = dist(N.x, N.y, hc.x, hc.y); if (d > 280 && d < 430) { s = k; break; } }
+    if (s < 0) s = WD.randNode(60);
+    const tn = WD.nodeNear(hc.x, hc.y), r = WD.route(s, tn) || [s, tn], pts = routePts(r, 3.2);
+    pts.push(boundaryToward(H, pts[pts.length - 1].x, pts[pts.length - 1].y));
+    const sq = mkSquad(pts, 6, 'ברק', 3.5); M.sq = sq; M.phase = 'approach';
+    const add = (sq.total / sq.spd * 1.6 + 60) * upv('battery'); M.timeLeft += add; M.total += add;
+    radio(`נוספו ${Math.round(add)} שניות לליווי הכוח`, 'good');
+    sq.onArrive = () => { M.breachWait = true; };
+    M.huntAt = M.diff >= 1 ? sq.total * 0.6 : -1;
+  },
+  update(dt) {
+    const alive = ents.filter(e => e.side === 'hostage' && e.alive).length, o = M.objs.find(o => o.id === 'safe'), txt = `החטופים בחיים (${alive}/${M.hostN})`;
+    if (o.text !== txt) { o.text = txt; renderObjs(); }
+    if (M.hb.ruined) return endMission(false, 'בניין החטופים קרס');
+    if (alive * 2 < M.hostN || alive === 0) return endMission(false, 'החטופים נפגעו');
+    const sq = M.sq; if (!sq) return;
+    if (squadAlive(sq) === 0) return endMission(false, 'כוח החילוץ הושמד');
+    if (M.phase === 'approach') {
+      if (M.huntAt > 0 && sq.prog >= M.huntAt) { M.huntAt = -1; spawnHunters(sq, 2 + M.diff, 'כוח ׳ברק׳: חמושים מתקרבים לבניין!'); if (M.diff >= 3) spawnTechnical(sq); }
+      if (M.breachWait && !sq.halt) {
+        M.breachWait = false; M.phase = 'breach'; M.breachT = 9; setObj('cover', { done: true });
+        radio('כוח ׳ברק׳: פורצים לבניין!', 'friend', true);
+        sq.mem.forEach(m => { if (m.alive) { enter(m, M.hb, 1e9); m.stay = true; } });
+        for (const e of ents) if (e.inGuard && e.alive) later(rnd(2, 6), () => { if (e.alive) kill(e, 'friend'); });
+        for (let i = 0; i < 6; i++) later(rnd(1.5, 7), () => { const H = M.hb; if (!H.ruined) parts.push({ k: 'muzzle', x: rnd(H.x, H.x + H.w), y: rnd(H.y, H.y + H.h), t: 0, life: 0.12, r: 2 }); SFX.far(); });
+      }
+    } else if (M.phase === 'breach') { M.breachT -= dt; if (M.breachT <= 0) MIS.rescue.extract(); }
+    else if (M.phase === 'extract' && sq.state === 'arrived') {
+      M.phase = 'lz'; radio('הגענו לנקודת האיסוף. מסוק בדרך — החזיקו מעמד!', 'friend', true);
+      spawnHeli(M.lz, () => MIS.rescue.board());
+    }
+  },
+  extract() {
+    const H = M.hb, sq = M.sq, hc = { x: H.x + H.w / 2, y: H.y + H.h / 2 };
+    let lz = null;
+    for (let t = 0; t < 100 && !lz; t++) { const a = rnd(TAU), r = rnd(230, 360), p = WD.openSpot(hc.x + Math.cos(a) * r, hc.y + Math.sin(a) * r, 40, 10); if (WD.inside(p.x, p.y, 80) && !WD.bNear(p.x, p.y, 14).length) lz = p; }
+    if (!lz) lz = WD.openSpot(WORLD / 2, WORLD / 2, 200, 10);
+    M.lz = lz;
+    const a = WD.nodeNear(hc.x, hc.y), b = WD.nodeNear(lz.x, lz.y), r = WD.route(a, b) || [a, b];
+    const pts = [boundaryToward(H, WD.nodes[a].x, WD.nodes[a].y), ...routePts(r, 3.2), { x: lz.x, y: lz.y }];
+    setSquadPath(sq, pts); sq.spd = 3.2; sq.onArrive = null;
+    const add = (sq.total / sq.spd * 1.6 + 50) * upv('battery'); M.timeLeft += add; M.total += add;
+    sq.mem.forEach(m => { if (m.alive && m.inside) { m.inside = null; m.stay = false; m.x = pts[0].x + rnd(-1, 1); m.y = pts[0].y + rnd(-1, 1); m.st = 'idle'; } });
+    for (const h of ents) if (h.side === 'hostage' && h.alive) { h.inside = null; h.stay = false; h.x = pts[0].x + rnd(-1, 1); h.y = pts[0].y + rnd(-1, 1); h.st = 'idle'; sq.hos.push(h); }
+    M.phase = 'extract';
+    radio('כוח ׳ברק׳: יש לנו את החטופים! יוצאים לנקודת האיסוף', 'friend', true);
+    spawnHunters(sq, 2 + M.diff, null);
+    if (M.diff >= 2) spawnTechnical(sq, 'טנדר חמוש רודף אחרי הכוח!');
+  },
+  board() {
+    if (M.over) return;
+    const sq = M.sq, alive = sq.hos.filter(h => h.alive).length;
+    setObj('ext', { done: true });
+    if (alive === M.hostN) { setObj('safe', { done: true }); M.bonus.push({ text: 'כל החטופים חולצו בשלום', f: 0.3 }); }
+    if (M.stats.friendDead === 0) M.bonus.push({ text: 'בלי אבדות בכוח', f: 0.15 });
+    endMission(true);
+    for (const m of sq.mem.concat(sq.hos)) if (m.alive) { m.gone = true; m.alive = false; }
+  },
+};
+
+/* ----- סיור ומעקב ----- */
+MIS.recon = {
+  setup() {
+    const nStops = 2 + (M.diff >= 2 ? 1 : 0) + (M.diff >= 4 ? 1 : 0);
+    let cur = WD.randNode(250); const path = [cur]; M.stops = [];
+    for (let s = 0; s < nStops; s++) {
+      let nb = -1;
+      for (let t = 0; t < 100; t++) { const k = WD.randNode(140), A = WD.nodes[k], C = WD.nodes[cur], d = dist(A.x, A.y, C.x, C.y); if (d > 230 && d < 420) { nb = k; break; } }
+      if (nb < 0) nb = WD.randNode(140);
+      const r = WD.route(cur, nb); if (!r || r.length < 2) continue;
+      path.push(...r.slice(1)); M.stops.push(path.length - 1); cur = nb;
+    }
+    if (path.length < 2) { const r = WD.route(cur, WD.randNode(140)); if (r) path.push(...r.slice(1)); M.stops = [path.length - 1]; }
+    M.stopDone = [];
+    const car = mkV('enemy', 'target', 0, 0, { vmax: 7.5, st: 'drive', marked: true, passive: true, off: 2.6 });
+    setRoute(car, path); const p = roadPos(car); car.x = p.x; car.y = p.y; car.ang = p.ang;
+    car.stopAt = v => {
+      const i = M.stops.indexOf(v.ri); if (i < 0 || M.stopDone[i] || v.ri === path.length - 1) return false;
+      M.stopDone[i] = true; v.st = 'stop'; v.stopT = rnd(14, 18); MIS.recon.meet(v, false); return true;
+    };
+    car.onEnd = v => MIS.recon.meet(v, true);
+    M.tcar = car; M.lock = true; M.lostT = 0; M.lostMax = [25, 20, 16, 12, 9][M.diff];
+    M.contactsArmed = 0; M.contactsMarked = 0;
+    for (let i = [0, 2, 4, 6, 8][M.diff]; i > 0; i--) { const ed = WD.randEdge(0.1); if (!ed) break; const v = mkV('civ', 'car', 0, 0, { st: 'drive', col: '#ecebe6', decoy: true, vmax: rnd(7, 10) }); placeOnEdge(v, ed, rnd(), 2.6); }
+    const cum = polyCum(path.map(k => WD.nodes[k]));
+    const len = cum[cum.length - 1];
+    M.focus = { x: car.x, y: car.y }; M.area = { x: car.x, y: car.y };
+    const mid = WD.nodes[path[Math.floor(path.length / 2)]]; placeAA(mid.x, mid.y, 280);
+    M.timeLeft = ((len / 7.2 + M.stops.length * 17 + 25) * 1.3 + 20) * upv('battery');
+    M.objs = [{ id: 'track', text: 'עקבו אחרי רכב המטרה עד היעד הסופי' }, { id: 'lost', text: `אל תאבדו מגע יותר מ־${M.lostMax} שניות ברצף` },
+      { id: 'contacts', text: 'בונוס: סמנו אנשי קשר חמושים (0)', opt: true }, { id: 'strike', text: 'בונוס: השמדת הרכב ביעד הסופי', opt: true, hidden: true }];
+    M.intro = 'עקבו אחרי רכב המטרה. אם הוא יוצא מהמסך — מוצאים אותו ומסמנים מחדש. בעצירות סמנו את החמושים.';
+  },
+  meet(v, final) {
+    if (M.over) return;
+    const bs = WD.bNear(v.x, v.y, 45).filter(b => !b.ruined), b = bs.length ? pick(bs) : null;
+    const n = rint(2, 3), armedN = Math.max(1, Math.round(n * 0.5));
+    for (let i = 0; i < n; i++) {
+      const src = b ? boundaryToward(b, v.x + rnd(-5, 5), v.y + rnd(-5, 5)) : { x: v.x + rnd(-15, 15), y: v.y + rnd(-15, 15) };
+      const e = mkP('enemy', 'contact', src.x, src.y, { st: 'contact', cst: 0, armed: i < armedN, passive: true, car: v, home: b, tx: v.x + rnd(-3.5, 3.5), ty: v.y + rnd(-3.5, 3.5) });
+      if (e.armed) M.contactsArmed++;
+    }
+    MIS.recon.contactsTxt();
+    if (final) {
+      setObj('track', { done: true }); setObj('lost', { done: true }); M.finalT = 22; setObj('strike', { hidden: false });
+      radio('הרכב הגיע ליעד הסופי. אושרה תקיפה על הרכב — בונוס אם תשמידו אותו בתוך 20 שניות', 'good', true);
+    } else radio('הרכב עצר — סמנו את מי שנפגש איתו', 'warn');
+  },
+  contactsTxt() { setObj('contacts', { text: `בונוס: סמנו אנשי קשר חמושים (${M.contactsMarked}/${M.contactsArmed})` }); },
+  update(dt) {
+    const car = M.tcar;
+    if (!car.alive) {
+      if (M.finalT !== undefined) { setObj('strike', { done: true }); M.bonus.push({ text: 'השמדת רכב המטרה', f: 0.3 }); MIS.recon.finish(); return; }
+      return endMission(false, 'רכב המטרה הושמד לפני הזמן — המודיעין אבד');
+    }
+    if (M.finalT !== undefined) { M.finalT -= dt; if (M.finalT <= 0) { MIS.recon.finish(); return; } }
+    const vis = inView(car.x, car.y, 0.03);
+    if (M.lock && !vis && M.finalT === undefined) { M.lock = false; car.marked = false; M.lastSeen = { x: car.x, y: car.y }; radio('אבד מגע עם המטרה! מצאו את הרכב וסמנו אותו מחדש', 'bad', true); }
+    if (!M.lock && M.finalT === undefined) { M.lostT += dt; if (M.lostT > M.lostMax) { setObj('lost', { fail: true }); return endMission(false, 'המטרה אבדה'); } }
+  },
+  finish() {
+    if (M.over) return;
+    if (M.contactsMarked > 0) { setObj('contacts', { done: true }); M.bonus.push({ text: `סימון אנשי קשר חמושים (${M.contactsMarked})`, f: Math.min(0.4, M.contactsMarked * 0.08) }); }
+    endMission(true);
+  },
+  onMark(e, silent) {
+    const car = M.tcar;
+    if (e === car) { if (!M.lock) { M.lock = true; M.lostT = 0; radio('מגע חודש — ממשיכים במעקב', 'good'); } return; }
+    if (e.decoy && !silent) radio('רכב שגוי — זה לא רכב המטרה', 'warn');
+    if (e.role === 'contact' && e.armed && !e.counted) { e.counted = true; M.contactsMarked++; MIS.recon.contactsTxt(); }
+  },
+};
+
+/* =====================================================================
+   מחזור משימה
+   ===================================================================== */
+function resetWorldState() { ents = []; shots = []; emiss = []; rockets = []; parts = []; decals = []; tracers = []; squads = []; helis = []; timers = []; EID = 1; FR.length = 0; }
+function startMission(card, diff, droneId, lo) {
+  auInit();
+  WD = genWorld(card.seed, card.zone);
+  resetWorldState();
+  const D = DRONES[droneId];
+  M = { card, type: card.type, diff, Df: DIFFS[diff], zone: card.zone, tod: card.tod, t: 0, timeLeft: 0, total: 0, over: false, objs: [], bonus: [], flags: {},
+    stats: { civ: 0, ff: 0, kills: 0, friendDead: 0, hostDead: 0, used: {} } };
+  drone = { id: droneId, D, x: 0, y: 0, ocx: 0, ocy: 0, ang: rnd(TAU), orbit: D.orbit, speed: D.speed * upv('engine'), mhp: Math.round(D.hp * upv('armor')), hp: 0,
+    flares: upv('flares'), flareT: 0, altF: 1, altHigh: false, heading: 0, down: false, stealth: D.stealth || 1 };
+  drone.hp = drone.mhp;
+  loadout = lo.map(s => ({ w: s.w, n: s.n, max: s.n }));
+  selW = 0; firing = false; fireCd = 0; orbitMode = false; paused = false; shake = 0; staticT = 0; flashT = 0; confirmAt = 0;
+  thermal = card.tod === 'night' && upv('thermal') > 0;
+  WIND.x = rnd(-1.6, 1.6); WIND.y = rnd(-1.6, 1.6);
+  populateCommon();
+  MIS[M.type].setup();
+  M.total = M.timeLeft;
+  const f = M.focus;
+  drone.ocx = f.x; drone.ocy = f.y; drone.x = f.x + Math.cos(drone.ang) * D.orbit; drone.y = f.y + Math.sin(drone.ang) * D.orbit;
+  cam.x = f.x; cam.y = f.y; cam.z = cam.zt = 2; cam.slew = null;
+  showHUD();
+  radio(`מבצע ׳${card.name}׳: ${M.intro}`, '', false);
+  if (M.tod === 'night' && !upv('thermal')) radio('משימת לילה בלי מצלמה תרמית — יהיה קשה לראות', 'warn');
+  humStart();
+}
+function endMission(win, reason) {
+  if (!M || M.over) return;
+  M.over = true; M.win = win; M.reason = reason || ''; firing = false;
+  $('fireBtn').classList.remove('held');
+  radio(win ? 'המשימה הושלמה!' : 'המשימה נכשלה: ' + reason, win ? 'good' : 'bad');
+  say(win ? 'המשימה הושלמה' : 'המשימה נכשלה');
+  if (win) SFX.win(); else SFX.fail();
+  setTimeout(() => { humStop(); showDebrief(); }, 2600);
+}
+
+function updDrone(dt) {
+  const d = drone; if (d.down) return;
+  d.altF += clamp((d.altHigh ? 0.6 : 1) - d.altF, -dt * 0.14, dt * 0.14);
+  if (M.type === 'recon' && M.lock && M.tcar.alive) { const k = 1 - Math.exp(-dt * 0.8); d.ocx += (M.tcar.x - d.ocx) * k; d.ocy += (M.tcar.y - d.ocy) * k; }
+  d.ang += d.speed / d.orbit * dt;
+  const px = d.ocx + Math.cos(d.ang) * d.orbit, py = d.ocy + Math.sin(d.ang) * d.orbit, dx = px - d.x, dy = py - d.y, L = Math.hypot(dx, dy);
+  const v = d.speed * (L > d.orbit * 0.5 ? 1.7 : 1.15) * dt;
+  if (L > 0.01) { const s = Math.min(L, v); d.x += dx / L * s; d.y += dy / L * s; d.heading = Math.atan2(dy, dx); }
+  d.flareT -= dt;
+}
+function setOrbit(x, y) {
+  drone.ocx = clamp(x, 0, WORLD); drone.ocy = clamp(y, 0, WORLD);
+  orbitMode = false; $('orbitBtn').classList.remove('on'); $('banner').classList.add('hidden');
+  radio('הרחפן בדרך למסלול החדש'); SFX.click();
+}
+function updCam(dt) {
+  const sc = scaleNow(), kp = 380 * DPR / sc * dt;
+  if (keys.ArrowLeft || keys.KeyA) { cam.x -= kp; cam.slew = null; }
+  if (keys.ArrowRight || keys.KeyD) { cam.x += kp; cam.slew = null; }
+  if (keys.ArrowUp || keys.KeyW) { cam.y -= kp; cam.slew = null; }
+  if (keys.ArrowDown || keys.KeyS) { cam.y += kp; cam.slew = null; }
+  if (keys.KeyQ || keys.Minus) cam.zt = clamp(cam.zt * Math.exp(-dt * 1.6), 1, maxZoom());
+  if (keys.KeyE || keys.Equal) cam.zt = clamp(cam.zt * Math.exp(dt * 1.6), 1, maxZoom());
+  if (cam.slew) { const k = 1 - Math.exp(-dt * 6); cam.x += (cam.slew.x - cam.x) * k; cam.y += (cam.slew.y - cam.y) * k; if (dist(cam.x, cam.y, cam.slew.x, cam.slew.y) < 0.4) cam.slew = null; }
+  cam.z += (cam.zt - cam.z) * (1 - Math.exp(-dt * 9));
+  if (drone && M) {
+    const r = drone.D.sensor, d = dist(cam.x, cam.y, drone.x, drone.y);
+    M.rangeLim = d > r - 2;
+    if (d > r) { cam.x = drone.x + (cam.x - drone.x) / d * r; cam.y = drone.y + (cam.y - drone.y) / d * r; if (cam.slew) cam.slew = null; }
+  }
+  cam.x = clamp(cam.x, 0, WORLD); cam.y = clamp(cam.y, 0, WORLD);
+  const t = performance.now() / 1000;
+  sway.x = (Math.sin(t * 0.7) * 0.22 + Math.sin(t * 1.9 + 1) * 0.08) * (drone ? 1 + (1 - drone.altF) : 1);
+  sway.y = (Math.cos(t * 0.6) * 0.22 + Math.sin(t * 2.3) * 0.08) * (drone ? 1 + (1 - drone.altF) : 1);
+}
+const maxZoom = () => upv('zoom');
+
+function updEnts(dt) {
+  FR.length = 0;
+  for (const e of ents) if (e.alive && !e.inside && !e.gone && e.side === 'friend') FR.push(e);
+  for (const e of ents) {
+    if (!e.alive) {
+      if (e.burn > 0) { e.burn -= dt; if (chance(dt * 5)) parts.push({ k: 'smoke', x: e.x + gauss(), y: e.y + gauss(), vx: gauss(), vy: gauss(), r: rnd(1, 2), gr: 1.6, t: 0, life: rnd(4, 8), a: 0.55 }); if (chance(dt * 8)) parts.push({ k: 'fire', x: e.x + gauss() * 1.2, y: e.y + gauss() * 1.2, vx: gauss(), vy: gauss(), r: rnd(0.6, 1.3), t: 0, life: rnd(0.3, 0.7) }); }
+      e.deadT = (e.deadT || 0) + dt; continue;
+    }
+    if (e.hitT > 0) e.hitT -= dt;
+    if (e.k === 'p') {
+      e.moving = false;
+      if (e.inside) updInside(e, dt);
+      else if (e.side === 'civ') updCiv(e, dt);
+      else if (e.side === 'enemy') updEnemy(e, dt);
+    } else if (e.k === 'v') updVeh(e, dt);
+    else if (e.k === 's' && e.aa && M) updAA(e, dt);
+  }
+}
+
+function update(dt) {
+  if (!M) { demoUpdate(dt); return; }
+  if (paused) return;
+  M.t += dt;
+  if (!M.over) {
+    M.timeLeft -= dt;
+    if (M.timeLeft <= 0) { M.timeLeft = 0; if (M.endAt) endMission(true); else endMission(false, M.type === 'recon' ? 'הסוללה נגמרה' : 'נגמר הזמן'); }
+  }
+  fireCd -= dt;
+  if (firing && curW() && WEAPONS[curW().w].auto) fire(true);
+  updDrone(dt); updCam(dt);
+  updEnts(dt);
+  for (const sq of squads) updSquad(sq, dt);
+  updShots(dt); updRockets(dt); updEmiss(dt); updHelis(dt); updParts(dt);
+  for (let i = timers.length - 1; i >= 0; i--) { if (i >= timers.length) continue; timers[i].t -= dt; if (timers[i].t <= 0) { const f = timers[i].fn; timers.splice(i, 1); f(); } }
+  if (!M.over && MIS[M.type].update) MIS[M.type].update(dt);
+  if (upv('ai')) autoId(dt);
+  staticT = Math.max(0, staticT - dt); flashT = Math.max(0, flashT - dt); shake *= Math.exp(-dt * 5);
+  M.aaAlert = Math.max(0, (M.aaAlert || 0) - dt);
+  for (const d of decals) d.t += dt;
+  for (const b of WD.B) if (b.labelT > 0) b.labelT -= dt;
+  hudTick();
+}
+
+/* ---------- מצב הדגמה ברקע התפריט ---------- */
+let demo = null;
+function demoInit() {
+  const zone = pick(['urban', 'village', 'urban', 'open']);
+  WD = genWorld((Math.random() * 2 ** 31) | 0, zone); resetWorldState(); M = null; drone = null;
+  for (let i = 0; i < 16; i++) { const ed = WD.randEdge(0); if (!ed) break; const v = mkV('civ', 'car', 0, 0, { st: 'drive' }); placeOnEdge(v, ed, rnd(), 2.6); }
+  for (let i = 0; i < 50; i++) { const ed = WD.randEdge(0.2); if (!ed) break; const p = mkP('civ', 'civ', 0, 0, { st: 'walk' }); placeOnEdge(p, ed, rnd(), (chance(.5) ? 1 : -1) * rnd(4.6, 6.2)); }
+  const a = rnd(TAU); demo = { vx: Math.cos(a) * 9, vy: Math.sin(a) * 9, t: 0 };
+  cam.x = WORLD / 2; cam.y = WORLD / 2; cam.z = cam.zt = 2.6; thermal = false;
+}
+function demoUpdate(dt) {
+  if (!demo) return;
+  demo.t += dt;
+  cam.x += demo.vx * dt; cam.y += demo.vy * dt;
+  if (cam.x < 250 || cam.x > WORLD - 250) demo.vx *= -1;
+  if (cam.y < 250 || cam.y > WORLD - 250) demo.vy *= -1;
+  if (demo.t > 9) { demo.t = 0; thermal = !thermal; }
+  for (const e of ents) { if (!e.alive) continue; if (e.k === 'v') updVeh(e, dt); else if (e.inside) updInside(e, dt); else updCiv(e, dt); }
+  updParts(dt);
+  const t = performance.now() / 1000; sway.x = Math.sin(t * 0.7) * 0.2; sway.y = Math.cos(t * 0.6) * 0.2;
+}
+
+/* =====================================================================
+   ציור: מצלמת יום ותרמית, אפקטים, סימבולוגיה ומפה קטנה
+   ===================================================================== */
+const cv = $('cv'), ctx = cv.getContext('2d');
+const miniCv = $('mini'), mctx = miniCv.getContext('2d');
+let DPR = 1, POST = null, frameN = 0;
+const VX = { cx: WORLD / 2, cy: WORLD / 2, sc: 1 };
+function resize() { DPR = Math.min(2, window.devicePixelRatio || 1); cv.width = Math.round(innerWidth * DPR); cv.height = Math.round(innerHeight * DPR); buildPost(); }
+const zoomEff = () => cam.z * (drone ? drone.altF : 1);
+const scaleNow = () => Math.min(cv.width, cv.height) / (VIEW_UNITS / zoomEff());
+const w2s = (x, y) => ({ x: (x - VX.cx) * VX.sc + cv.width / 2, y: (y - VX.cy) * VX.sc + cv.height / 2 });
+const s2w = (x, y) => ({ x: (x - cv.width / 2) / VX.sc + VX.cx, y: (y - cv.height / 2) / VX.sc + VX.cy });
+function onScreen(x, y, m) { const p = w2s(x, y); m = (m || 0) * DPR; return p.x > -m && p.y > -m && p.x < cv.width + m && p.y < cv.height + m; }
+function inView(x, y, f) { const p = w2s(x, y), mx = cv.width * f, my = cv.height * f; return p.x > mx && p.y > my && p.x < cv.width - mx && p.y < cv.height - my; }
+
+function sprite(stops, size) { const c = mkCanvas(size, size), g = c.getContext('2d'), gr = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2); stops.forEach(([o, col]) => gr.addColorStop(o, col)); g.fillStyle = gr; g.fillRect(0, 0, size, size); return c; }
+const GLOW = sprite([[0, 'rgba(255,255,255,1)'], [0.35, 'rgba(255,255,255,0.55)'], [1, 'rgba(255,255,255,0)']], 64);
+const FIREG = sprite([[0, 'rgba(255,245,210,1)'], [0.3, 'rgba(255,170,60,0.85)'], [0.7, 'rgba(200,60,10,0.35)'], [1, 'rgba(120,20,0,0)']], 64);
+const SCORCH = sprite([[0, 'rgba(18,14,10,0.8)'], [0.6, 'rgba(25,20,15,0.45)'], [1, 'rgba(25,20,15,0)']], 64);
+function buildPost() {
+  const w = cv.width, h = cv.height;
+  const vig = mkCanvas(w, h), g = vig.getContext('2d'), gr = g.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.34, w / 2, h / 2, Math.hypot(w, h) * 0.6);
+  gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,0.55)'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  const nzc = mkCanvas(256, 256), n = nzc.getContext('2d'), id = n.createImageData(256, 256);
+  for (let i = 0; i < 256 * 256; i++) { const v = Math.random() * 255; id.data[i * 4] = id.data[i * 4 + 1] = id.data[i * 4 + 2] = v; id.data[i * 4 + 3] = 255; }
+  n.putImageData(id, 0, 0);
+  const sh = Math.max(3, Math.round(3 * DPR)), sl = mkCanvas(1, sh), s = sl.getContext('2d'); s.fillStyle = 'rgba(0,0,0,0.55)'; s.fillRect(0, 0, 1, Math.max(1, Math.round(DPR)));
+  POST = { vig, nzc, noise: ctx.createPattern(nzc, 'repeat'), scan: ctx.createPattern(sl, 'repeat') };
+}
+
+function render() {
+  const w = cv.width, h = cv.height;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  if (!WD) { ctx.fillStyle = '#070b09'; ctx.fillRect(0, 0, w, h); return; }
+  const sc = scaleNow();
+  const sh = shake > 0.02 ? shake * 3 * DPR / sc : 0;
+  VX.cx = cam.x + sway.x + (sh ? gauss() * sh : 0); VX.cy = cam.y + sway.y + (sh ? gauss() * sh : 0); VX.sc = sc;
+  drawWorld(sc);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  drawPost();
+  if (M && drone) { drawHUD(sc); if (frameN % 3 === 0) drawMini(); }
+}
+
+const circle = (x, y, r) => { ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); };
+function drawWorld(sc) {
+  const th = thermal, w = cv.width, h = cv.height, night = M && M.tod === 'night', dusk = M && M.tod === 'dusk';
+  const setW = () => ctx.setTransform(sc, 0, 0, sc, w / 2 - VX.cx * sc, h / 2 - VX.cy * sc);
+  setW();
+  const hw = w / 2 / sc, hh = h / 2 / sc, x0 = VX.cx - hw, x1 = VX.cx + hw, y0 = VX.cy - hh, y1 = VX.cy + hh;
+  const inV = (x, y, m) => x > x0 - m && x < x1 + m && y > y0 - m && y < y1 + m;
+  /* קרקע */
+  ctx.fillStyle = th ? '#3a3a3a' : WD.baseDay; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(th ? WD.gTh : WD.gDay, 0, 0, WORLD, WORLD);
+  if (sc > 2) { ctx.save(); ctx.globalAlpha = th ? 0.06 : 0.11; ctx.scale(0.35, 0.35); ctx.fillStyle = POST.noise; ctx.fillRect(x0 / 0.35, y0 / 0.35, (x1 - x0) / 0.35, (y1 - y0) / 0.35); ctx.restore(); }
+  /* כבישים */
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  if (th) {
+    ctx.strokeStyle = '#4b4b4b'; ctx.lineWidth = 4.5; ctx.stroke(WD.pDirt);
+    ctx.strokeStyle = '#6c6c6c'; ctx.lineWidth = 6.5; ctx.stroke(WD.pSmall);
+    ctx.strokeStyle = '#7b7b7b'; ctx.lineWidth = 9.5; ctx.stroke(WD.pMain);
+  } else {
+    ctx.strokeStyle = '#9d8f75'; ctx.lineWidth = 4.5; ctx.stroke(WD.pDirt);
+    ctx.strokeStyle = '#8c877b'; ctx.lineWidth = 7.8; ctx.stroke(WD.pSmall);
+    ctx.strokeStyle = '#78756d'; ctx.lineWidth = 6.4; ctx.stroke(WD.pSmall);
+    ctx.strokeStyle = '#8c877b'; ctx.lineWidth = 11.2; ctx.stroke(WD.pMain);
+    ctx.strokeStyle = '#5e5c57'; ctx.lineWidth = 9.6; ctx.stroke(WD.pMain);
+    if (sc > 3) { ctx.setLineDash([3, 4]); ctx.strokeStyle = 'rgba(235,230,205,0.45)'; ctx.lineWidth = 0.25; ctx.stroke(WD.pMain); ctx.setLineDash([]); }
+  }
+  ctx.strokeStyle = th ? '#5c5c5c' : '#958c7d'; ctx.lineWidth = 0.7; ctx.stroke(WD.pWalls);
+  /* סימני פיצוץ */
+  for (const d of decals) {
+    if (!inV(d.x, d.y, d.r * 1.4)) continue;
+    const s = d.r * 1.35;
+    ctx.globalAlpha = th ? 0.55 : 0.85; ctx.drawImage(SCORCH, d.x - s, d.y - s, s * 2, s * 2);
+    if (th) { const heat = clamp(1 - d.t / 45, 0, 1); if (heat > 0.02) { ctx.globalAlpha = heat * 0.55; ctx.drawImage(GLOW, d.x - s * 0.8, d.y - s * 0.8, s * 1.6, s * 1.6); } }
+  }
+  ctx.globalAlpha = 1;
+  /* בניינים (אריחים גלויים בלבד) */
+  const tx0 = clamp(Math.floor((x0 - 30) / TILE), 0, TN - 1), tx1 = clamp(Math.floor((x1 + 30) / TILE), 0, TN - 1);
+  const ty0 = clamp(Math.floor((y0 - 30) / TILE), 0, TN - 1), ty1 = clamp(Math.floor((y1 + 30) / TILE), 0, TN - 1);
+  const vis = []; for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) vis.push(WD.tiles[ty * TN + tx]);
+  if (!th) { ctx.fillStyle = night ? 'rgba(20,18,12,0.18)' : 'rgba(28,24,16,0.36)'; for (const T of vis) ctx.fill(T.psh); }
+  for (const T of vis) if (T.hasRub) { ctx.fillStyle = th ? '#474747' : '#7a766c'; ctx.fill(T.prubB); ctx.fillStyle = th ? '#5f5f5f' : '#57534b'; ctx.fill(T.prub); }
+  const BC = th ? TH_B : DAY_B;
+  for (let s = 0; s < 4; s++) { ctx.fillStyle = BC[s]; for (const T of vis) ctx.fill(T.pb[s]); }
+  if (sc > 1.3) { ctx.strokeStyle = th ? 'rgba(0,0,0,0.3)' : 'rgba(50,45,35,0.5)'; ctx.lineWidth = Math.max(0.2, 0.9 / sc); for (const T of vis) ctx.stroke(T.pall); }
+  if (sc > 2.6) { ctx.fillStyle = th ? '#474747' : '#3b3a36'; for (const T of vis) ctx.fill(T.ptank); ctx.fillStyle = th ? '#505050' : '#4f5c68'; for (const T of vis) ctx.fill(T.psol); }
+  /* מבנים, רכבים, גופות */
+  for (const e of ents) {
+    if (e.gone || e.inside || !inV(e.x, e.y, 9)) continue;
+    if (e.k === 's') drawStatic(e, th);
+    else if (e.k === 'v') drawVeh(e, th);
+    else if (!e.alive) drawBody(e, th);
+  }
+  if (!th) drawPeople(sc, false, inV);
+  /* עצים */
+  if (!th) {
+    ctx.fillStyle = 'rgba(20,22,12,0.33)'; for (const T of vis) ctx.fill(T.ptsh);
+    ctx.fillStyle = WD.zk === 'open' ? '#5f6444' : '#4a5636'; for (const T of vis) ctx.fill(T.pt);
+    if (sc > 2) { ctx.fillStyle = 'rgba(135,155,95,0.22)'; for (const T of vis) ctx.fill(T.pthi); }
+  } else { ctx.fillStyle = 'rgba(33,33,33,0.82)'; for (const T of vis) ctx.fill(T.pt); }
+  if (th) {
+    drawPeople(sc, true, inV);
+    const lv = upv('thermal'); ctx.globalAlpha = lv >= 2 ? 0.5 : 0.2;
+    for (const e of ents) { if (!e.alive || !e.inside || e.gone || !inV(e.x, e.y, 3)) continue; ctx.drawImage(GLOW, e.x - 2.6, e.y - 2.6, 5.2, 5.2); }
+    ctx.globalAlpha = 1;
+  }
+  for (const hl of helis) drawHeli(hl, th);
+  drawSmoke(th, inV);
+  /* לילה/דמדומים במצלמת יום */
+  if (!th && (night || dusk)) { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = night ? 'rgba(2,6,10,0.86)' : 'rgba(30,18,40,0.36)'; ctx.fillRect(0, 0, w, h); setW(); }
+  drawEmissive(sc, th, night || dusk, inV);
+  if (M) drawOverlays(sc);
+}
+
+function drawPeople(sc, th, inV) {
+  const minR = 1.3 * DPR / sc;
+  for (const e of ents) {
+    if (e.k !== 'p' || !e.alive || e.inside || e.gone || !inV(e.x, e.y, 3)) continue;
+    const r = Math.max(e.r, minR);
+    if (th) {
+      ctx.globalAlpha = 0.5; ctx.drawImage(GLOW, e.x - r * 2.4, e.y - r * 2.4, r * 4.8, r * 4.8); ctx.globalAlpha = 1;
+      ctx.fillStyle = '#f7f7f7'; circle(e.x, e.y, r * 0.75);
+      if (e.armed && sc > 4) drawGun(e, '#3c3c3c');
+    } else {
+      ctx.fillStyle = 'rgba(0,0,0,0.33)'; circle(e.x + 0.45, e.y + 0.55, r);
+      if (e.armed && sc > 3) drawGun(e, '#121212');
+      ctx.fillStyle = e.col; circle(e.x, e.y, r);
+      if (sc > 3.5) { ctx.fillStyle = e.side === 'friend' ? '#3e4a2e' : 'rgba(25,20,15,0.85)'; circle(e.x + Math.cos(e.ang) * 0.12, e.y + Math.sin(e.ang) * 0.12, r * 0.45); }
+    }
+  }
+}
+function drawGun(e, col) {
+  const a = e.ang, big = e.role === 'rpg' || e.role === 'manpads';
+  ctx.strokeStyle = col; ctx.lineWidth = big ? 0.45 : 0.28; ctx.lineCap = 'butt';
+  const sx = e.x + Math.cos(a + 0.6) * 0.35, sy = e.y + Math.sin(a + 0.6) * 0.35, L = big ? 2.3 : 1.9;
+  ctx.beginPath(); ctx.moveTo(sx - Math.cos(a) * (big ? 0.9 : 0.2), sy - Math.sin(a) * (big ? 0.9 : 0.2)); ctx.lineTo(sx + Math.cos(a) * L, sy + Math.sin(a) * L); ctx.stroke();
+  ctx.lineCap = 'round';
+}
+function drawBody(e, th) {
+  const fade = clamp(1 - e.deadT / 120, 0, 1);
+  ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(e.ang);
+  if (th) { ctx.fillStyle = `rgba(${Math.round(90 + 140 * fade)},${Math.round(90 + 140 * fade)},${Math.round(90 + 140 * fade)},0.85)`; ctx.fillRect(-1.1, -0.45, 2.2, 0.9); }
+  else { ctx.fillStyle = 'rgba(45,30,22,0.35)'; ctx.beginPath(); ctx.arc(0.2, 0.2, 1.2, 0, TAU); ctx.fill(); ctx.fillStyle = e.col; ctx.fillRect(-1.1, -0.42, 2.2, 0.84); }
+  ctx.restore();
+}
+function drawVeh(e, th) {
+  const L = e.len, W = e.wid;
+  if (!th && e.alive) { ctx.save(); ctx.translate(e.x + 0.55, e.y + 0.7); ctx.rotate(e.ang); ctx.fillStyle = 'rgba(0,0,0,0.38)'; ctx.fillRect(-L / 2, -W / 2, L, W); ctx.restore(); }
+  ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(e.ang);
+  if (!e.alive) {
+    const heat = clamp(e.burn / 20, 0, 1);
+    ctx.fillStyle = th ? `rgb(${Math.round(80 + 170 * heat)},${Math.round(80 + 170 * heat)},${Math.round(80 + 170 * heat)})` : '#1d1b19';
+    ctx.fillRect(-L / 2, -W / 2, L, W); ctx.fillStyle = th ? '#555' : '#2c2926'; ctx.fillRect(-L / 2 + 1, -W / 2 + 0.4, L - 2, W - 0.8);
+    ctx.restore(); return;
+  }
+  if (th) {
+    const hot = e.heat;
+    ctx.fillStyle = `rgb(${Math.round(85 + 60 * hot)},${Math.round(85 + 60 * hot)},${Math.round(85 + 60 * hot)})`; ctx.fillRect(-L / 2, -W / 2, L, W);
+    ctx.globalAlpha = 0.35 + 0.6 * hot; ctx.drawImage(GLOW, L / 2 - 2.6, -1.8, 3.6, 3.6); ctx.globalAlpha = 1;
+    ctx.fillStyle = '#3e3e3e'; ctx.fillRect(L / 2 - 1.8, -W / 2 + 0.3, 0.7, W - 0.6);
+    if (e.role === 'technical') { ctx.fillStyle = '#9a9a9a'; ctx.fillRect(-L / 2 + 0.3, -W / 2 + 0.3, L * 0.45, W - 0.6); }
+  } else {
+    ctx.fillStyle = e.col; ctx.fillRect(-L / 2, -W / 2, L, W);
+    if (e.role === 'technical') {
+      ctx.fillStyle = '#7b7460'; ctx.fillRect(-L / 2 + 0.25, -W / 2 + 0.25, L * 0.45, W - 0.5);
+      ctx.fillStyle = '#1b1b1b'; ctx.beginPath(); ctx.arc(-0.9, 0, 0.5, 0, TAU); ctx.fill();
+      ctx.strokeStyle = '#151515'; ctx.lineWidth = 0.25; ctx.beginPath(); ctx.moveTo(-0.9, 0); ctx.lineTo(1.3, 0); ctx.stroke();
+    } else { ctx.fillStyle = 'rgba(255,255,255,0.13)'; ctx.fillRect(-L / 2 + 1.3, -W / 2 + 0.3, L - 3, W - 0.6); ctx.fillStyle = '#20262b'; ctx.fillRect(-L / 2 + 0.45, -W / 2 + 0.3, 0.5, W - 0.6); }
+    ctx.fillStyle = '#20262b'; ctx.fillRect(L / 2 - 1.75, -W / 2 + 0.25, 0.75, W - 0.5);
+  }
+  ctx.restore();
+}
+function drawStatic(e, th) {
+  ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(e.ang);
+  const dead = !e.alive;
+  switch (e.role) {
+    case 'launcher':
+      ctx.fillStyle = dead ? (th ? '#888' : '#1f1d1a') : th ? '#707070' : '#6c6a55'; ctx.fillRect(-2.4, -1.6, 4.8, 3.2);
+      if (!dead) { ctx.fillStyle = th ? '#3a3a3a' : '#1c1c1a'; for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) ctx.fillRect(-1.9 + i * 1.05, -1.15 + j * 0.85, 0.6, 0.55); }
+      break;
+    case 'hmg':
+      ctx.strokeStyle = dead ? (th ? '#777' : '#2a2724') : th ? '#7c7c7c' : '#a99b79'; ctx.lineWidth = 0.9; ctx.beginPath(); ctx.arc(0, 0, 1.9, 0.5, TAU - 0.3); ctx.stroke();
+      if (!dead) { ctx.strokeStyle = th ? '#c8c8c8' : '#161616'; ctx.lineWidth = 0.3; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(2.4, 0); ctx.stroke(); ctx.fillStyle = th ? '#bbb' : '#222'; circle(0, 0, 0.45); }
+      break;
+    case 'cache': case 'crates':
+      ctx.fillStyle = dead ? (th ? '#999' : '#24211d') : th ? '#6c6c6c' : '#7a6a48';
+      ctx.fillRect(-1.6, -1.1, 1.5, 1.1); ctx.fillRect(0.2, -1.2, 1.4, 1.2); ctx.fillRect(-1.0, 0.25, 1.6, 1.0);
+      if (e.role === 'cache' && !dead) { ctx.fillStyle = th ? '#5a5a5a' : '#56653f'; ctx.fillRect(-2.1, -1.6, 4.2, 1.2); }
+      break;
+    case 'shaft':
+      if (!th) { ctx.fillStyle = '#b5a787'; circle(2.6, 1.4, 2.2); }
+      ctx.fillStyle = dead ? (th ? '#999' : '#1f1d1a') : th ? '#6a6a6a' : '#8a8578'; ctx.fillRect(-1.8, -1.5, 3.6, 3);
+      ctx.fillStyle = th ? (dead ? '#ddd' : '#a5a5a5') : '#121212'; circle(0, 0, 0.95);
+      break;
+  }
+  ctx.restore();
+}
+function drawHeli(hl, th) {
+  ctx.save(); ctx.translate(hl.x, hl.y); ctx.rotate(hl.ang);
+  if (!th && hl.st !== 'land') { ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.beginPath(); ctx.ellipse(3, 4, 4, 1.4, 0, 0, TAU); ctx.fill(); }
+  ctx.fillStyle = th ? '#bdbdbd' : '#3d4637'; ctx.beginPath(); ctx.ellipse(0, 0, 3.6, 1.4, 0, 0, TAU); ctx.fill();
+  ctx.fillRect(-7.5, -0.35, 5, 0.7); ctx.fillRect(-7.8, -1.3, 0.6, 2.6);
+  if (th) { ctx.globalAlpha = 0.8; ctx.drawImage(GLOW, -2.5, -2, 4, 4); ctx.globalAlpha = 1; }
+  ctx.strokeStyle = th ? 'rgba(220,220,220,0.5)' : 'rgba(30,30,30,0.55)'; ctx.lineWidth = 0.35;
+  for (let i = 0; i < 2; i++) { const a = hl.rot + i * Math.PI / 2; ctx.beginPath(); ctx.moveTo(Math.cos(a) * -6.5, Math.sin(a) * -6.5); ctx.lineTo(Math.cos(a) * 6.5, Math.sin(a) * 6.5); ctx.stroke(); }
+  ctx.fillStyle = th ? 'rgba(220,220,220,0.08)' : 'rgba(40,40,40,0.08)'; circle(0, 0, 6.5);
+  ctx.restore();
+}
+function drawSmoke(th, inV) {
+  for (const p of parts) {
+    if (p.k !== 'smoke' && p.k !== 'trail' && p.k !== 'dust' && p.k !== 'debris') continue;
+    if (!inV(p.x, p.y, (p.r || 1) + 2)) continue;
+    const f = 1 - p.t / p.life;
+    if (p.k === 'debris') { ctx.fillStyle = th ? `rgba(230,230,230,${f})` : `rgba(30,25,20,${f})`; ctx.fillRect(p.x - 0.25, p.y - 0.25, 0.5, 0.5); continue; }
+    const a = (p.a || 0.5) * Math.pow(f, 1.2);
+    if (th) ctx.fillStyle = p.k === 'trail' ? `rgba(150,150,150,${a * 0.6})` : `rgba(42,42,42,${a * 0.65})`;
+    else ctx.fillStyle = p.dust || p.k === 'dust' ? `rgba(168,156,132,${a})` : p.k === 'trail' ? `rgba(200,200,195,${a})` : `rgba(72,70,66,${a})`;
+    circle(p.x, p.y, p.r);
+  }
+}
+function drawEmissive(sc, th, dark, inV) {
+  for (const p of parts) {
+    if (!inV(p.x, p.y, (p.r || 2) * 2.5)) continue;
+    const f = 1 - p.t / p.life;
+    switch (p.k) {
+      case 'fire': ctx.globalAlpha = f; { const s = p.r * 2.2; ctx.drawImage(th ? GLOW : FIREG, p.x - s / 2, p.y - s / 2, s, s); } break;
+      case 'flash': ctx.globalAlpha = f * 0.95; { const s = p.r * 2; ctx.drawImage(th ? GLOW : FIREG, p.x - s / 2, p.y - s / 2, s, s); } break;
+      case 'muzzle': case 'spark': ctx.globalAlpha = f; { const s = Math.max(p.r * 2.4, 4 * DPR / sc); ctx.drawImage(th ? GLOW : FIREG, p.x - s / 2, p.y - s / 2, s, s); } break;
+      case 'ring': ctx.globalAlpha = f * 0.6; ctx.strokeStyle = th ? '#fff' : 'rgb(255,240,210)'; ctx.lineWidth = 0.6; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, TAU); ctx.stroke(); break;
+    }
+  }
+  ctx.globalAlpha = 1;
+  const lw = Math.max(0.22, 1.3 * DPR / sc);
+  for (const t of tracers) {
+    const p = t.t / t.life, hx = lerp(t.x0, t.x1, p), hy = lerp(t.y0, t.y1, p), q = Math.max(0, p - 0.3), tx = lerp(t.x0, t.x1, q), ty = lerp(t.y0, t.y1, q);
+    if (!inV(hx, hy, 5) && !inV(tx, ty, 5)) continue;
+    ctx.strokeStyle = th ? 'rgba(255,255,255,0.9)' : t.kind === 'f' ? 'rgba(255,235,150,0.85)' : t.kind === 'aa' ? 'rgba(255,150,60,0.9)' : 'rgba(255,190,90,0.9)';
+    ctx.lineWidth = lw; ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(hx, hy); ctx.stroke();
+  }
+  for (const r of rockets) if (inV(r.x, r.y, 4)) ctx.drawImage(th ? GLOW : FIREG, r.x - 1.6, r.y - 1.6, 3.2, 3.2);
+  for (const m of emiss) if (inV(m.x, m.y, 5)) ctx.drawImage(th ? GLOW : FIREG, m.x - 2.2, m.y - 2.2, 4.4, 4.4);
+  if (dark && !th) {
+    ctx.globalAlpha = 0.85;
+    for (const e of ents) { if (e.k !== 'v' || !e.alive || e.st !== 'drive' && e.st !== 'hunt' || !inV(e.x, e.y, 20)) continue; const c = Math.cos(e.ang), s = Math.sin(e.ang); ctx.drawImage(FIREG, e.x + c * (e.len / 2 + 3) - 3.5, e.y + s * (e.len / 2 + 3) - 3.5, 7, 7); }
+    ctx.globalAlpha = 1;
+  }
+  /* תחמושת שלנו בדרך */
+  if (drone) for (const s of shots) {
+    const W = s.W; if (W.radius <= 2) continue;
+    const lead = s.air ? 0.45 : 0.6; if (s.t > lead) continue;
+    const q = 1 - s.t / lead, dx = s.x - drone.x, dy = s.y - drone.y, L = Math.hypot(dx, dy) || 1;
+    const dirx = s.air ? Math.cos(s.T * 7) : dx / L, diry = s.air ? Math.sin(s.T * 7) : dy / L;
+    const far = (s.air ? 160 : 70) * (1 - q), px = s.x - dirx * far, py = s.y - diry * far;
+    if (!inV(px, py, 10)) continue;
+    ctx.strokeStyle = th ? 'rgba(255,255,255,0.9)' : 'rgba(255,230,180,0.9)'; ctx.lineWidth = Math.max(0.3, 1.6 * DPR / sc);
+    ctx.beginPath(); ctx.moveTo(px - dirx * 5, py - diry * 5); ctx.lineTo(px, py); ctx.stroke();
+    ctx.drawImage(th ? GLOW : FIREG, px - 1.5, py - 1.5, 3, 3);
+  }
+}
+function drawOverlays(sc) {
+  const px = DPR / sc;
+  ctx.lineWidth = 1.5 * px; ctx.setLineDash([6 * px, 5 * px]);
+  if (M.type === 'strike') {
+    ctx.strokeStyle = 'rgba(255,180,70,0.85)';
+    for (const t of M.targets) { if (t.k === 'b' ? t.b.ruined : !t.alive) continue; ctx.beginPath(); ctx.arc(t.intel.x, t.intel.y, t.intel.r, 0, TAU); ctx.stroke(); }
+  }
+  for (const sq of squads) {
+    if (sq.state !== 'move' || !squadLead(sq)) continue;
+    ctx.strokeStyle = 'rgba(92,194,255,0.65)'; ctx.beginPath();
+    const p0 = pathAt(sq, sq.prog); ctx.moveTo(p0.x, p0.y);
+    for (let i = 1; i < sq.pts.length; i++) if (sq.cum[i] > sq.prog) ctx.lineTo(sq.pts[i].x, sq.pts[i].y);
+    ctx.stroke();
+    const e = sq.pts[sq.pts.length - 1]; ctx.beginPath(); ctx.arc(e.x, e.y, 6, 0, TAU); ctx.stroke();
+  }
+  if (M.lz) { ctx.strokeStyle = 'rgba(94,245,154,0.9)'; ctx.beginPath(); ctx.arc(M.lz.x, M.lz.y, 9, 0, TAU); ctx.stroke(); }
+  if (M.type === 'recon' && !M.lock && M.lastSeen) { ctx.strokeStyle = 'rgba(255,180,70,0.8)'; ctx.beginPath(); ctx.arc(M.lastSeen.x, M.lastSeen.y, 14, 0, TAU); ctx.stroke(); }
+  ctx.setLineDash([]);
+}
+
+/* ---------- אפקטי מצלמה ---------- */
+function drawPost() {
+  const w = cv.width, h = cv.height;
+  if (flashT > 0) { ctx.fillStyle = `rgba(255,255,255,${Math.min(0.5, flashT * 1.6)})`; ctx.fillRect(0, 0, w, h); }
+  const lv = upv('thermal');
+  ctx.save(); ctx.globalAlpha = thermal ? (lv >= 2 ? 0.05 : 0.1) : 0.055;
+  ctx.translate((Math.random() * 256) | 0, (Math.random() * 256) | 0); ctx.fillStyle = POST.noise; ctx.fillRect(-256, -256, w + 256, h + 256); ctx.restore();
+  ctx.globalAlpha = 0.22; ctx.fillStyle = POST.scan; ctx.fillRect(0, 0, w, h); ctx.globalAlpha = 1;
+  ctx.drawImage(POST.vig, 0, 0);
+  if (!drone) return;
+  const dmg = 1 - drone.hp / drone.mhp, st = staticT > 0 ? Math.min(1, staticT * 1.6) : dmg > 0.7 ? 0.08 : 0;
+  if (st > 0) {
+    const n = Math.floor(18 * st) + 2;
+    for (let i = 0; i < n; i++) { const y = Math.random() * h, hh = (Math.random() * 12 + 2) * DPR; ctx.globalAlpha = 0.2 + 0.6 * st; ctx.drawImage(POST.nzc, (Math.random() * 128) | 0, 0, 128, 4, 0, y, w, hh); }
+    ctx.globalAlpha = 1;
+  }
+  if (drone.down) {
+    ctx.save(); ctx.globalAlpha = 0.92; ctx.translate((Math.random() * 256) | 0, (Math.random() * 256) | 0); ctx.fillStyle = POST.noise; ctx.fillRect(-256, -256, w + 256, h + 256); ctx.restore();
+    tag('אות אבד — הרחפן הופל', w / 2, h / 2, '#ff5a4f', 24);
+  }
+}
+
+/* ---------- סימבולוגיה על המסך ---------- */
+function tag(text, x, y, col, size, align) {
+  ctx.font = `700 ${Math.round((size || 11) * DPR)}px system-ui,-apple-system,"Segoe UI",Arial,sans-serif`;
+  ctx.textAlign = align || 'center'; ctx.textBaseline = 'middle';
+  ctx.lineWidth = 3 * DPR; ctx.strokeStyle = 'rgba(0,0,0,0.75)'; ctx.lineJoin = 'round'; ctx.strokeText(text, x, y);
+  ctx.fillStyle = col; ctx.fillText(text, x, y);
+}
+function brackets(x, y, hw, hh, len, col, lw) {
+  ctx.strokeStyle = col; ctx.lineWidth = (lw || 1.5) * DPR; ctx.beginPath();
+  for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { ctx.moveTo(x + sx * hw, y + sy * (hh - len)); ctx.lineTo(x + sx * hw, y + sy * hh); ctx.lineTo(x + sx * (hw - len), y + sy * hh); }
+  ctx.stroke();
+}
+function edgeArrow(x, y, col, text) {
+  const p = w2s(x, y), w = cv.width, h = cv.height, m = 46 * DPR;
+  if (p.x > m && p.y > m && p.x < w - m && p.y < h - m) return false;
+  const cx = w / 2, cy = h / 2, dx = p.x - cx, dy = p.y - cy;
+  const k = Math.min((w / 2 - m) / Math.max(1e-6, Math.abs(dx)), (h / 2 - m) / Math.max(1e-6, Math.abs(dy)));
+  const ex = cx + dx * k, ey = cy + dy * k, a = Math.atan2(dy, dx);
+  ctx.save(); ctx.translate(ex, ey); ctx.rotate(a); ctx.fillStyle = col; ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.lineWidth = 2 * DPR;
+  ctx.beginPath(); ctx.moveTo(11 * DPR, 0); ctx.lineTo(-6 * DPR, -7 * DPR); ctx.lineTo(-6 * DPR, 7 * DPR); ctx.closePath(); ctx.stroke(); ctx.fill(); ctx.restore();
+  if (text) tag(text, ex - Math.cos(a) * 26 * DPR, ey - Math.sin(a) * 18 * DPR, col, 10);
+  return true;
+}
+function drawHUD(sc) {
+  const w = cv.width, h = cv.height, cx = w / 2, cy = h / 2, u = DPR, th = thermal, now = performance.now() / 1000;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  /* סימונים בעולם */
+  if (M.type === 'strike') M.targets.forEach((t, i) => {
+    if (t.k === 'b' ? t.b.ruined : !t.alive) return;
+    if (!edgeArrow(t.intel.x, t.intel.y, '#ffb347', 'יעד ' + (i + 1))) { const p = w2s(t.intel.x, t.intel.y); if (t.intel.r * sc > 40 * u) tag('יעד ' + (i + 1), p.x, p.y - t.intel.r * sc - 8 * u, '#ffb347', 11); else tag('יעד ' + (i + 1), p.x, p.y, '#ffb347', 11); }
+  });
+  for (const b of WD.B) {
+    if (!b.label || b.ruined) continue;
+    const perm = b.tgt && b.label === 'מחסן אמצעי לחימה';
+    if (!perm && !(b.labelT > 0)) continue;
+    const p = w2s(b.x + b.w / 2, b.y + b.h / 2); tag(b.label, p.x, p.y, perm ? '#ff5a4f' : '#d8e8dc', 10);
+  }
+  if (M.type === 'rescue') for (const c of M.cands) {
+    const b = c.b; if (b.ruined) continue;
+    const ccx = b.x + b.w / 2, ccy = b.y + b.h / 2, col = c.state === 2 ? '#ff5a4f' : c.state === 1 ? '#8a9a90' : '#ffd166';
+    if (M.phase === 'find' && edgeArrow(ccx, ccy, col, c.letter)) continue;
+    const p = w2s(ccx, ccy), s = Math.max(8 * u, Math.max(b.w, b.h) * sc * 0.55);
+    if (c.state !== 1 || M.phase === 'find') { brackets(p.x, p.y, s, s, Math.min(s * 0.4, 9 * u), col, 1.2); tag(c.state === 2 ? 'חטופים' : c.state === 1 ? c.letter + ' ✗' : c.letter, p.x, p.y - s - 9 * u, col, 12); }
+  }
+  for (const sq of squads) {
+    const L = squadLead(sq); if (!L) continue;
+    edgeArrow(L.x, L.y, '#5cc2ff', '׳' + sq.name + '׳');
+    if (sq.state === 'move' && !(M.lz && M.phase === 'extract')) { const e = sq.pts[sq.pts.length - 1]; if (!edgeArrow(e.x, e.y, '#5cc2ff', 'יעד')) { const p = w2s(e.x, e.y); tag('יעד', p.x, p.y - 12 * u, '#5cc2ff', 10); } }
+  }
+  if (M.lz && !edgeArrow(M.lz.x, M.lz.y, '#5ef59a', 'H')) { const p = w2s(M.lz.x, M.lz.y); tag('H', p.x, p.y, '#5ef59a', 14); }
+  for (const e of ents) {
+    if (!e.alive || e.inside || e.gone || (e.side !== 'friend' && e.side !== 'hostage')) continue;
+    const p = w2s(e.x, e.y); if (p.x < 0 || p.y < 0 || p.x > w || p.y > h) continue;
+    const yo = Math.max(7 * u, e.r * sc * 1.4) + 4 * u;
+    ctx.fillStyle = e.side === 'friend' ? '#5cc2ff' : '#ffd166'; ctx.beginPath(); ctx.moveTo(p.x - 4 * u, p.y - yo - 5 * u); ctx.lineTo(p.x + 4 * u, p.y - yo - 5 * u); ctx.lineTo(p.x, p.y - yo); ctx.closePath(); ctx.fill();
+  }
+  for (const e of ents) {
+    if (!e.alive || !e.marked || e.inside || e.gone) continue;
+    const special = e.hvt || (e.role === 'target');
+    const col = special ? '#ffd166' : e.side === 'enemy' ? '#ff5a4f' : e.side === 'civ' ? '#a6f0bf' : '#5cc2ff';
+    if (special && edgeArrow(e.x, e.y, col, e.hvt ? 'מפקד' : 'מטרה')) continue;
+    const p = w2s(e.x, e.y); if (p.x < -30 || p.y < -30 || p.x > w + 30 || p.y > h + 30) continue;
+    const q = Math.max(8 * u, e.r * sc * 1.7);
+    brackets(p.x, p.y, q, q, q * 0.45, col, 1.3);
+    if (special || sc > 2.2 || e.side === 'enemy') tag(special ? (e.hvt ? 'מפקד' : 'מטרה') : label(e), p.x, p.y + q + 9 * u, col, 10);
+  }
+  /* תחמושת בדרך */
+  for (const s of shots) {
+    if (s.W.radius <= 2) continue;
+    const p = w2s(s.x, s.y), r = Math.max(6 * u, s.W.radius * sc);
+    ctx.strokeStyle = s.air ? '#ffb347' : 'rgba(255,215,110,0.9)'; ctx.lineWidth = 1.2 * u; ctx.setLineDash([3 * u, 3 * u]);
+    ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+    tag(s.t.toFixed(1), p.x, p.y - r - 8 * u, s.air ? '#ffb347' : '#ffd166', 10);
+  }
+  /* כוונת */
+  const s = curW(), W = s ? WEAPONS[s.w] : null, a = aimPoint();
+  const dc = W && W.radius > 2 ? dangerClose(a.x, a.y, W.radius) : null;
+  const col = dc ? 'rgba(255,90,80,0.95)' : th ? 'rgba(255,255,255,0.92)' : 'rgba(205,255,220,0.92)';
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 1.5 * u;
+  const g = 9 * u, L = 34 * u;
+  ctx.beginPath(); ctx.moveTo(cx - L, cy); ctx.lineTo(cx - g, cy); ctx.moveTo(cx + g, cy); ctx.lineTo(cx + L, cy); ctx.moveTo(cx, cy - L); ctx.lineTo(cx, cy - g); ctx.moveTo(cx, cy + g); ctx.lineTo(cx, cy + L); ctx.stroke();
+  ctx.fillRect(cx - u, cy - u, 2 * u, 2 * u);
+  brackets(cx, cy, 64 * u, 46 * u, 12 * u, col, 1.2);
+  if (W && W.radius * sc > 6 * u) { ctx.strokeStyle = dc ? 'rgba(255,90,80,0.8)' : 'rgba(255,255,255,0.35)'; ctx.setLineDash([4 * u, 4 * u]); ctx.lineWidth = u; ctx.beginPath(); ctx.arc(cx, cy, W.radius * sc, 0, TAU); ctx.stroke(); ctx.setLineDash([]); }
+  if (s && canTrack(s.w)) {
+    const lc = lockCandidate();
+    if (lc) { const p = w2s(lc.x, lc.y), q = Math.max(9 * u, lc.r * sc * 1.9); ctx.strokeStyle = '#ff5a4f'; ctx.lineWidth = 1.6 * u; ctx.beginPath(); ctx.moveTo(p.x, p.y - q); ctx.lineTo(p.x + q, p.y); ctx.lineTo(p.x, p.y + q); ctx.lineTo(p.x - q, p.y); ctx.closePath(); ctx.stroke(); tag('נעילה', p.x, p.y - q - 8 * u, '#ff5a4f', 10); }
+  }
+  /* טלמטריה */
+  const alt = Math.round(lerp(1800, 420, (drone.altF - 0.6) / 0.4));
+  const dcol = th ? 'rgba(235,235,235,0.85)' : 'rgba(200,240,212,0.85)';
+  tag(`x${zoomEff().toFixed(1)} · ${alt.toLocaleString('en-US')} מ׳ · ${th ? 'תרמי' : 'יום'}`, cx, cy - 58 * u, dcol, 10);
+  const rng = dist(drone.x, drone.y, a.x, a.y);
+  tag(`טווח ${(Math.hypot(rng, alt) / 1000).toFixed(2)} ק״מ · רשת ${String(Math.round(a.x * 2.3 + 1000)).padStart(4, '0')}/${String(Math.round(a.y * 2.3 + 1000)).padStart(4, '0')}`, cx, cy + 58 * u, dcol, 10);
+  if (W) tag(`${W.name} · ${s.n}`, cx, cy + 74 * u, s.n > 0 ? dcol : '#ff5a4f', 10);
+  /* מד עמידות */
+  const bw = 120 * u, bx = cx - bw / 2, by = 48 * u, f = drone.hp / drone.mhp;
+  ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(bx - u, by - u, bw + 2 * u, 7 * u);
+  ctx.fillStyle = f > 0.6 ? '#5ef59a' : f > 0.3 ? '#ffb347' : '#ff5a4f'; ctx.fillRect(bx, by, bw * f, 5 * u);
+  /* אזהרות */
+  let wy = cy - 92 * u;
+  if (emiss.length) {
+    const blink = 0.5 + 0.5 * Math.sin(now * 18);
+    ctx.strokeStyle = `rgba(255,40,40,${0.35 + 0.5 * blink})`; ctx.lineWidth = 7 * u; ctx.strokeRect(3 * u, 3 * u, w - 6 * u, h - 6 * u);
+    const tt = Math.max(0, Math.min(...emiss.map(m => m.T - m.t)));
+    tag(`⚠ טיל באוויר — נוריות! ${tt.toFixed(1)}`, cx, wy, `rgba(255,${Math.round(70 + 60 * blink)},70,1)`, 16); wy -= 22 * u;
+  }
+  if (M.aaAlert > 0) { tag(drone.altF > 0.85 ? 'ירי נ״מ לעבר הרחפן!' : 'ירי נ״מ — מחוץ לטווח', cx, wy, '#ffb347', 13); wy -= 20 * u; }
+  if (dc) tag(`קרוב ל${dc}!`, cx, cy + 92 * u, '#ff5a4f', 13);
+  else if (M.rangeLim) tag('גבול טווח החיישן — הזיזו את מסלול הרחפן', cx, cy + 92 * u, '#ffb347', 12);
+  if (M.type === 'recon' && !M.lock && !M.over) {
+    const left = M.lostMax - M.lostT;
+    tag(`אובדן מגע — ${left.toFixed(1)} שניות למציאת המטרה`, cx, wy, left < 5 ? '#ff5a4f' : '#ffb347', 15);
+    if (M.lastSeen) edgeArrow(M.lastSeen.x, M.lastSeen.y, '#ffb347', 'נראתה לאחרונה');
+  }
+  if (M.type === 'rescue' && M.phase === 'breach') tag(`הכוח בתוך הבניין — ${Math.max(0, M.breachT).toFixed(0)}`, cx, wy, '#5cc2ff', 14);
+  if (M.type === 'recon' && M.finalT !== undefined && M.finalT > 0) tag(`חלון תקיפה: ${M.finalT.toFixed(0)} שניות`, cx, wy, '#ffd166', 14);
+  if (M.endAt && !M.over && M.type === 'strike' && M.hvt && M.hvt.alive && !M.hvt.gone) tag(`בונוס מפקד: ${Math.max(0, M.endAt - M.t).toFixed(0)} שניות`, cx, wy, '#ffd166', 14);
+}
+
+/* ---------- מפה קטנה ---------- */
+function drawMini() {
+  const m = mctx, k = 240 / WORLD;
+  m.setTransform(1, 0, 0, 1, 0, 0); m.drawImage(WD.mini, 0, 0);
+  m.setTransform(k, 0, 0, k, 0, 0);
+  const lw = 1 / k;
+  m.lineWidth = 2 * lw; m.setLineDash([5 * lw, 5 * lw]); m.strokeStyle = 'rgba(94,245,154,0.4)';
+  m.beginPath(); m.arc(drone.x, drone.y, drone.D.sensor, 0, TAU); m.stroke();
+  m.strokeStyle = 'rgba(255,255,255,0.45)'; m.beginPath(); m.arc(drone.ocx, drone.ocy, drone.orbit, 0, TAU); m.stroke(); m.setLineDash([]);
+  const dot = (x, y, r, col) => { m.fillStyle = col; m.beginPath(); m.arc(x, y, r * lw, 0, TAU); m.fill(); };
+  if (M.type === 'strike') for (const t of M.targets) if (!(t.k === 'b' ? t.b.ruined : !t.alive)) { m.strokeStyle = '#ffb347'; m.lineWidth = 2 * lw; m.beginPath(); m.arc(t.intel.x, t.intel.y, t.intel.r, 0, TAU); m.stroke(); }
+  if (M.type === 'rescue') for (const c of M.cands) dot(c.b.x + c.b.w / 2, c.b.y + c.b.h / 2, 4, c.state === 2 ? '#ff5a4f' : c.state === 1 ? '#7a8a80' : '#ffd166');
+  for (const sq of squads) {
+    if (sq.state === 'move') { m.strokeStyle = 'rgba(92,194,255,0.8)'; m.lineWidth = 2 * lw; m.beginPath(); const p0 = pathAt(sq, sq.prog); m.moveTo(p0.x, p0.y); for (let i = 1; i < sq.pts.length; i++) if (sq.cum[i] > sq.prog) m.lineTo(sq.pts[i].x, sq.pts[i].y); m.stroke(); }
+    const L = squadLead(sq); if (L) dot(L.x, L.y, 4, '#5cc2ff');
+  }
+  if (M.lz) dot(M.lz.x, M.lz.y, 5, '#5ef59a');
+  if (M.hvt && M.hvt.alive && !M.hvt.gone) dot(M.hvt.x, M.hvt.y, 4, '#ffd166');
+  if (M.type === 'recon') { if (M.lock) dot(M.tcar.x, M.tcar.y, 4, '#ffd166'); else if (M.lastSeen) dot(M.lastSeen.x, M.lastSeen.y, 4, '#ffb347'); }
+  for (const e of ents) if (e.alive && e.marked && e.side === 'enemy' && !e.inside && !e.gone && !e.hvt && e.role !== 'target') dot(e.x, e.y, 2.2, '#ff5a4f');
+  const hw = cv.width / 2 / VX.sc, hh = cv.height / 2 / VX.sc;
+  m.strokeStyle = '#5ef59a'; m.lineWidth = 2 * lw; m.strokeRect(VX.cx - hw, VX.cy - hh, hw * 2, hh * 2);
+  m.save(); m.translate(drone.x, drone.y); m.rotate(drone.heading); m.fillStyle = '#fff';
+  m.beginPath(); m.moveTo(9 * lw, 0); m.lineTo(-6 * lw, -6 * lw); m.lineTo(-3 * lw, 0); m.lineTo(-6 * lw, 6 * lw); m.closePath(); m.fill(); m.restore();
+}
+
+/* =====================================================================
+   ממשק: תפריט, בסיס (משימות/האנגר/חנות), תדריך, סיכום, HUD וקלט
+   ===================================================================== */
+const UI = {};
+function showScreen(html, keepScroll) {
+  const s = $('screen'), y = s.scrollTop; s.innerHTML = html; s.classList.remove('hidden'); s.scrollTop = keepScroll ? y : 0;
+}
+function hideScreen() { $('screen').classList.add('hidden'); }
+function showModal(html, keepScroll) {
+  const m = $('modal'), old = m.querySelector('.sheet'), y = old ? old.scrollTop : 0;
+  m.innerHTML = `<div class="sheet">${html}</div>`; m.classList.remove('hidden');
+  if (keepScroll) m.querySelector('.sheet').scrollTop = y;
+}
+function hideModal() { $('modal').classList.add('hidden'); $('modal').innerHTML = ''; }
+function closeModal() { if (M && !M.over && paused) UI.pause(); else hideModal(); }
+function toast(t) {
+  const el = $('toast'); el.textContent = t; el.classList.remove('hidden'); el.style.opacity = '1';
+  clearTimeout(toast.t); toast.t = setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.classList.add('hidden'), 400); }, 1800);
+}
+function confirmBox(text, okText, onOk) {
+  UI._ok = () => { hideModal(); onOk(); };
+  showModal(`<h2>${text}</h2><div style="display:flex;gap:8px;margin-top:16px"><button class="btn red" style="flex:1" onclick="UI._ok()">${okText}</button><button class="btn" style="flex:1" onclick="hideModal()">ביטול</button></div>`);
+}
+
+/* ---------- לוח משימות ---------- */
+function newCard(type) {
+  const r = Math.random, th = S && upv('thermal') > 0, q = r();
+  return { type, zone: ['urban', 'urban', 'village', 'village', 'open'][Math.floor(r() * 5)], tod: q < 0.6 ? 'day' : (q < 0.82 || !th) ? 'dusk' : 'night',
+    seed: (r() * 2 ** 31) | 0, name: OPNAMES[Math.floor(r() * OPNAMES.length)] };
+}
+function ensureBoard() { if (!S.board || S.board.length !== MORDER.length) S.board = MORDER.map(newCard); }
+
+/* ---------- תפריט ראשי ---------- */
+function showMenu() {
+  $('hud').classList.add('hidden'); hideModal();
+  if (M || !WD) demoInit();
+  const has = !!loadSave();
+  showScreen(`<div class="wrap"><div class="logo">${GAME_NAME}</div>
+    <div class="sub">חמ״ל רחפנים — תקיפה · סיוע לכוחות · חילוץ חטופים · סיור ומעקב</div>
+    <div class="menu">
+      ${has ? '<button class="btn pri" onclick="UI.cont()">המשך</button>' : ''}
+      <button class="btn ${has ? '' : 'pri'}" onclick="UI.newGame()">משחק חדש</button>
+      <button class="btn" onclick="UI.help()">איך משחקים</button>
+      <button class="btn" onclick="UI.settings()">הגדרות</button>
+    </div>
+    <p class="note" style="text-align:center;margin-top:28px">שם זמני · גרסה ראשונה</p></div>`);
+}
+UI.cont = () => { auInit(); S = loadSave() || newSave(); ensureBoard(); save(); showBase('missions'); };
+UI.newGame = () => {
+  auInit();
+  const go = () => { S = newSave(); ensureBoard(); save(); showBase('missions'); UI.help(); };
+  if (loadSave()) confirmBox('להתחיל משחק חדש? ההתקדמות הקיימת תימחק.', 'משחק חדש', go); else go();
+};
+
+/* ---------- בסיס ---------- */
+let TAB = 'missions';
+function showBase(tab) {
+  const same = tab === TAB; if (tab) TAB = tab;
+  M = null; drone = null; $('hud').classList.add('hidden'); hideModal();
+  if (!WD) demoInit();
+  const hdr = `<div class="hdr"><div class="t">${GAME_NAME}</div><div class="chips">
+    <span class="chip">${rankOf(S.stats.done)}</span><span class="chip">משימות: <b>${S.stats.done}</b></span>
+    <span class="chip">תקציב: <b class="${S.money < 0 ? 'neg' : ''}">${fmtMoney(S.money)}</b></span>
+    <button class="btn sm" onclick="UI.settings()" aria-label="הגדרות">⚙</button><button class="btn sm" onclick="UI.help()" aria-label="עזרה">?</button><button class="btn sm" onclick="showMenu()">תפריט</button></div></div>`;
+  const tabs = `<div class="tabs">${[['missions', 'משימות'], ['hangar', 'האנגר'], ['shop', 'חנות']].map(([k, n]) => `<button class="tab ${TAB === k ? 'on' : ''}" onclick="showBase('${k}')">${n}</button>`).join('')}</div>`;
+  const body = TAB === 'missions' ? missionsHTML() : TAB === 'hangar' ? hangarHTML() : shopHTML();
+  showScreen(`<div class="wrap">${hdr}${tabs}${body}</div>`, same);
+}
+function missionsHTML() {
+  return `<div class="row" style="margin-bottom:10px;flex-wrap:wrap"><div class="note">בחרו משימה, ובתדריך — רמת קושי. ככל שהמשימה קשה יותר, התגמול גבוה יותר.</div><button class="btn sm" onclick="UI.reroll()">רענון משימות</button></div>
+  ${S.money < 0 ? '<p class="note" style="color:var(--bad)">התקציב במינוס — רימונים תמיד זמינים בחינם, אז אפשר להמשיך במשימות ולהחזיר את החוב.</p>' : ''}
+  <div class="grid">${S.board.map((c, i) => {
+    const T = MTYPES[c.type];
+    return `<div class="card click" onclick="UI.brief(${i})"><h3><span class="ic">${T.icon}</span>${T.name}</h3>
+      <div class="tags"><span class="tag">מבצע ׳${esc(c.name)}׳</span><span class="tag">${ZONES[c.zone].sector}</span><span class="tag ${c.tod === 'night' ? 'n' : c.tod === 'dusk' ? 'w' : ''}">${TOD_TXT[c.tod]}</span></div>
+      <p>${T.desc}</p><p class="note">${ZONES[c.zone].name}</p>
+      <div class="row"><span class="note">תגמול</span><span class="price">${fmtMoney(T.base)} – ${fmtMoney(T.base * 5)}</span></div></div>`;
+  }).join('')}</div>`;
+}
+function hangarHTML() {
+  const dr = DORDER.filter(k => S.drones[k]).map(k => {
+    const D = DRONES[k];
+    return `<div class="card"><h3><span class="ic">✈</span>${D.name} <small class="note">${D.type}</small></h3><p>${D.desc}</p>
+      <div class="stat"><div><span>תחנות חימוש:</span> ${D.slots}</div><div><span>עמידות:</span> ${Math.round(D.hp * upv('armor'))}</div><div><span>טווח חיישן:</span> ${D.sensor} מ׳</div><div><span>מהירות:</span> ${D.speed}</div>
+      <div><span>שיקום אחרי הפלה:</span> ${fmtMoney(D.repair * upv('crew'))}</div>${D.stealth < 1 ? '<div><span>חמקנות:</span> גבוהה</div>' : ''}</div></div>`;
+  }).join('');
+  const am = WORDER.map(k => { const W = WEAPONS[k]; return `<div class="slotRow"><div class="nm">${W.name}<small>${W.desc}</small></div><b>${W.free ? '∞' : S.ammo[k] || 0}</b></div>`; }).join('');
+  const ups = UPGRADES.map(u => `<div class="slotRow"><div class="nm">${u.name}</div><span class="note">${u.show(upv(u.id))}</span></div>`).join('');
+  return `<div class="sec">הרחפנים שלך</div><div class="grid">${dr}</div>
+    <div class="sec">מלאי תחמושת</div><div class="card">${am}<div class="slotRow"><div class="nm">תקיפת מטוס<small>פצצה כבדה ממטוס קרב, 7 שניות אחרי הקריאה</small></div><b>${S.air}</b></div></div>
+    <div class="sec">מערכות מותקנות</div><div class="card">${ups}</div>
+    <div class="sec">סטטיסטיקה</div><div class="card"><div class="stat"><div><span>הצלחות:</span> ${S.stats.done}</div><div><span>כישלונות:</span> ${S.stats.failed}</div><div><span>הרווחתם:</span> ${fmtMoney(S.stats.earned)}</div><div><span>חוסלו:</span> ${S.stats.kills}</div></div></div>`;
+}
+function shopHTML() {
+  const m = S.money, cls = maxOwnedCls();
+  const drones = DORDER.filter(k => !S.drones[k]).map(k => {
+    const D = DRONES[k];
+    return `<div class="card"><h3><span class="ic">✈</span>${D.name} <small class="note">${D.type}</small></h3><p>${D.desc}</p>
+      <div class="tags"><span class="tag">${D.slots} תחנות</span><span class="tag">עמידות ${D.hp}</span><span class="tag">חיישן ${D.sensor} מ׳</span>${D.cls >= 2 ? '<span class="tag g">טילים ומקלע</span>' : ''}${D.cls >= 3 ? '<span class="tag g">פצצות</span>' : ''}${D.stealth < 1 ? '<span class="tag g">חמקן</span>' : ''}</div>
+      <div class="row"><span class="price">${fmtMoney(D.price)}</span><button class="btn sm pri" ${m < D.price ? 'disabled' : ''} onclick="UI.buyDrone('${k}')">קנייה</button></div></div>`;
+  }).join('') || '<p class="note">יש לכם את כל הרחפנים.</p>';
+  const clsTxt = ['', 'כל רחפן', 'מ״בז״ ומעלה', 'מ״עיט״ ומעלה'];
+  const ammo = WORDER.filter(k => !WEAPONS[k].free).map(k => {
+    const W = WEAPONS[k];
+    return `<div class="card"><h3>${W.name}</h3><p>${W.desc}</p>
+      <div class="tags"><span class="tag">במלאי: ${S.ammo[k] || 0}</span><span class="tag ${cls < W.cls ? 'w' : ''}">${clsTxt[W.cls]}</span></div>
+      <div class="row"><span class="price">${fmtMoney(W.price)} ל־${W.pack}</span><button class="btn sm pri" ${m < W.price ? 'disabled' : ''} onclick="UI.buyAmmo('${k}')">קנייה</button></div></div>`;
+  }).join('') + `<div class="card"><h3>תקיפת מטוס</h3><p>מטוס קרב מטיל פצצה כבדה על נקודת הכוונת, 7 שניות אחרי הקריאה. הרס גדול — היזהרו מכוחות קרובים.</p>
+      <div class="tags"><span class="tag">במלאי: ${S.air}</span><span class="tag">כל רחפן</span></div>
+      <div class="row"><span class="price">${fmtMoney(AIRSTRIKE_PRICE)}</span><button class="btn sm pri" ${m < AIRSTRIKE_PRICE ? 'disabled' : ''} onclick="UI.buyAir()">קנייה</button></div></div>`;
+  const upCard = u => {
+    const lv = S.up[u.id] || 0, nx = u.levels[lv + 1];
+    return `<div class="card"><h3>${u.name}</h3><p>${u.desc}</p>
+      <div class="row"><div class="lvl">${u.levels.slice(1).map((_, i) => `<i class="${i < lv ? 'f' : ''}"></i>`).join('')}</div><span class="note">${u.show(upv(u.id))}${nx ? ' ← ' + u.show(nx.v) : ''}</span></div>
+      <div class="row">${nx ? `<span class="price">${fmtMoney(nx.price)}</span><button class="btn sm pri" ${m < nx.price ? 'disabled' : ''} onclick="UI.buyUp('${u.id}')">${lv ? 'שדרוג' : 'קנייה'}</button>` : '<span class="tag g">רמה מרבית</span>'}</div></div>`;
+  };
+  return `<div class="sec">רחפנים</div><div class="grid">${drones}</div>
+    <div class="sec">נשק ותחמושת</div><div class="grid">${ammo}</div>
+    <div class="sec">חיישנים ומצלמות</div><div class="grid">${UPGRADES.filter(u => u.cat === 'sensor').map(upCard).join('')}</div>
+    <div class="sec">תמיכה ועמידות</div><div class="grid">${UPGRADES.filter(u => u.cat === 'support').map(upCard).join('')}</div>`;
+}
+function pay(price) { if (S.money < price) return false; S.money -= price; SFX.buy(); save(); return true; }
+UI.buyDrone = k => { if (pay(DRONES[k].price)) { S.drones[k] = 1; toast(`נקנה: ${DRONES[k].name}`); showBase('shop'); } };
+UI.buyAmmo = k => { const W = WEAPONS[k]; if (pay(W.price)) { S.ammo[k] = (S.ammo[k] || 0) + W.pack; toast(`נקנו ${W.pack} × ${W.name}`); showBase('shop'); } };
+UI.buyAir = () => { if (pay(AIRSTRIKE_PRICE)) { S.air++; toast('נקנתה תקיפת מטוס'); showBase('shop'); } };
+UI.buyUp = id => { const u = UPGRADES.find(x => x.id === id), lv = S.up[id] || 0, nx = u.levels[lv + 1]; if (nx && pay(nx.price)) { S.up[id] = lv + 1; toast(`${u.name}: ${u.show(nx.v)}`); showBase('shop'); } };
+UI.reroll = () => { S.board = MORDER.map(newCard); save(); SFX.click(); showBase('missions'); };
+
+/* ---------- תדריך ---------- */
+let BR = null;
+const compatible = did => WORDER.filter(k => WEAPONS[k].cls <= DRONES[did].cls);
+function defaultSlots(did) {
+  const D = DRONES[did], c = compatible(did), sl = {}; let free = D.slots;
+  for (const k of ['missile', 'loiter', 'gun', 'bomb']) { if (free <= 1) break; if (c.includes(k) && (S.ammo[k] || 0) > 0) { sl[k] = 1; free--; } }
+  sl.grenade = free; return sl;
+}
+const slotRounds = (k, n) => { const W = WEAPONS[k]; return W.free ? n * W.perSlot : Math.min(n * W.perSlot, S.ammo[k] || 0); };
+const usedSlots = () => Object.values(BR.slots).reduce((a, b) => a + b, 0);
+UI.brief = i => {
+  auInit();
+  const card = S.board[i], did = S.drones[S.lastDrone] ? S.lastDrone : 'wasp';
+  BR = { i, card, diff: S.lastDiff[card.type] || 0, drone: did, slots: defaultSlots(did) };
+  renderBrief(false);
+};
+function renderBrief(keep) {
+  const { card, diff } = BR, T = MTYPES[card.type], Df = DIFFS[diff], D = DRONES[BR.drone], used = usedSlots(), night = card.tod === 'night';
+  const diffs = DIFFS.map((d, i) => `<button class="diff ${i === diff ? 'on' : ''}" onclick="UI.setDiff(${i})">${d.name}</button>`).join('');
+  const drones = DORDER.filter(k => S.drones[k]).map(k => { const d = DRONES[k]; return `<button class="dopt ${k === BR.drone ? 'on' : ''}" onclick="UI.setDrone('${k}')"><span><b>${d.name}</b> <small>${d.type}</small></span><small>${d.slots} תחנות · עמידות ${Math.round(d.hp * upv('armor'))}</small></button>`; }).join('');
+  const rows = compatible(BR.drone).map(k => {
+    const W = WEAPONS[k], n = BR.slots[k] || 0, st = W.free ? Infinity : (S.ammo[k] || 0), canAdd = used < D.slots && (W.free || st > n * W.perSlot);
+    return `<div class="slotRow"><div class="nm">${W.name}<small>${W.free ? 'ללא הגבלה' : 'במלאי: ' + st} · ${W.perSlot} לתחנה</small></div>
+      <div class="step"><button onclick="UI.slot('${k}',-1)" ${n <= 0 ? 'disabled' : ''}>−</button><b>${n}</b><button onclick="UI.slot('${k}',1)" ${canAdd ? '' : 'disabled'}>+</button></div>
+      <span class="note" style="min-width:46px;text-align:left">×${slotRounds(k, n)}</span></div>`;
+  }).join('');
+  const missing = WORDER.filter(k => WEAPONS[k].cls > D.cls).map(k => WEAPONS[k].short);
+  showModal(`<button class="x" onclick="hideModal()" aria-label="סגירה">✕</button><h2>${T.icon} ${T.name} — מבצע ׳${esc(card.name)}׳</h2>
+    <div class="tags" style="margin:6px 0 10px"><span class="tag">${ZONES[card.zone].sector} · ${ZONES[card.zone].name}</span><span class="tag ${night ? 'n' : ''}">${TOD_TXT[card.tod]}</span></div>
+    <p class="note" style="font-size:14px;color:#c4d2c8">${T.desc}</p>
+    <div class="sec">רמת קושי</div><div class="diffs">${diffs}</div>
+    <div class="stat"><div><span>תגמול:</span> <b class="price">${fmtMoney(T.base * Df.mult)}</b> + בונוסים</div><div><span>כוח אויב:</span> ${Df.force}</div><div><span>נ״מ:</span> ${AA_TXT[Df.aa]}</div><div><span>זמן:</span> ${diff <= 1 ? 'נדיב' : diff <= 2 ? 'רגיל' : 'לחוץ'}</div></div>
+    ${night && !upv('thermal') ? '<p class="note" style="color:var(--warn)">משימת לילה — בלי מצלמה תרמית כמעט לא רואים.</p>' : ''}
+    ${Df.aa >= 2 ? '<p class="note" style="color:var(--warn)">יש טילי כתף באזור — כשמופיעה התרעה, לוחצים על ״נוריות״.</p>' : ''}
+    <div class="sec">רחפן</div><div class="dlist">${drones}</div>
+    <div class="sec">חימוש — תחנות ${used}/${D.slots}</div>${rows}
+    ${missing.length ? `<p class="note">לא נתמך ב״${D.name}״: ${missing.join(', ')}</p>` : ''}
+    <p class="note">תחמושת שלא תנוצל תחזור למלאי. נוריות: ${upv('flares')} · תקיפות מטוס במלאי: ${S.air}</p>
+    <div style="display:flex;gap:8px;margin-top:14px"><button class="btn pri" style="flex:1" ${used < 1 ? 'disabled' : ''} onclick="UI.launch()">המראה ▶</button><button class="btn" onclick="hideModal()">ביטול</button></div>`, keep);
+}
+UI.setDiff = i => { BR.diff = i; renderBrief(true); };
+UI.setDrone = k => { BR.drone = k; BR.slots = defaultSlots(k); renderBrief(true); };
+UI.slot = (k, d) => { const n = (BR.slots[k] || 0) + d; if (n < 0 || (d > 0 && usedSlots() >= DRONES[BR.drone].slots)) return; BR.slots[k] = n; renderBrief(true); };
+UI.launch = () => {
+  const lo = []; for (const k of WORDER) { const n = BR.slots[k] || 0; if (n > 0) { const r = slotRounds(k, n); if (r > 0) lo.push({ w: k, n: r }); } }
+  if (!lo.length) return;
+  S.lastDiff[BR.card.type] = BR.diff; S.lastDrone = BR.drone; save();
+  hideModal(); hideScreen();
+  startMission(BR.card, BR.diff, BR.drone, lo); M.cardIdx = BR.i;
+};
+
+/* ---------- סיכום משימה ---------- */
+function computeResult() {
+  const base = Math.round(MTYPES[M.type].base * M.Df.mult), lines = []; let total = 0;
+  if (M.win) {
+    lines.push([`תגמול משימה (${M.Df.name})`, base]); total += base;
+    if (M.type !== 'recon') { const tb = Math.round(base * 0.25 * clamp(M.timeLeft / M.total, 0, 1)); if (tb > 0) { lines.push(['בונוס זמן', tb]); total += tb; } }
+    for (const b of M.bonus) { const v = Math.round(base * b.f); lines.push([b.text, v]); total += v; }
+    if (M.stats.civ) { const p = -Math.round(base * Math.min(0.4, M.stats.civ * 0.08)); lines.push([`פגיעה באזרחים (${M.stats.civ})`, p]); total += p; }
+    if (M.stats.ff) { const p = -Math.round(base * Math.min(0.6, M.stats.ff * 0.15)); lines.push([`ירי על כוחותינו (${M.stats.ff})`, p]); total += p; }
+  } else lines.push(['המשימה נכשלה — אין תגמול', 0]);
+  const rep = Math.round((drone.down ? drone.D.repair : drone.D.repair * (1 - drone.hp / drone.mhp)) * upv('crew'));
+  if (rep > 0) { lines.push([drone.down ? 'שיקום הרחפן שהופל' : 'תיקון נזקים לרחפן', -rep]); total -= rep; }
+  return { lines, total };
+}
+function showDebrief() {
+  if (!M || M.applied) return; M.applied = true;
+  paused = false; hideModal();
+  const r = computeResult(), before = rankOf(S.stats.done);
+  S.money += r.total;
+  const used = [];
+  for (const s of loadout) { const u = s.max - s.n; if (u > 0) used.push(`${WEAPONS[s.w].short} ${u}`); if (!WEAPONS[s.w].free) S.ammo[s.w] = Math.max(0, (S.ammo[s.w] || 0) - u); }
+  if (M.airUsed) used.push(`מטוס ${M.airUsed}`);
+  if (M.win) { S.stats.done++; S.stats.earned += Math.max(0, r.total); if (M.cardIdx !== undefined) S.board[M.cardIdx] = newCard(M.type); } else S.stats.failed++;
+  S.stats.kills += M.stats.kills; S.stats.civ += M.stats.civ;
+  save();
+  const after = rankOf(S.stats.done);
+  $('hud').classList.add('hidden');
+  showScreen(`<div class="wrap" style="max-width:560px"><div class="card" style="margin-top:5vh">
+    <h2 class="${M.win ? 'pos' : 'neg'}" style="margin:0">${M.win ? '✔ המשימה הושלמה' : '✖ המשימה נכשלה'}</h2>
+    ${!M.win ? `<p style="margin:2px 0">${esc(M.reason)}</p>` : ''}
+    <p class="note">מבצע ׳${esc(M.card.name)}׳ · ${MTYPES[M.type].name} · ${M.Df.name}</p>
+    <table class="res">${r.lines.map(([t, v]) => `<tr><td>${esc(t)}</td><td class="${v > 0 ? 'pos' : v < 0 ? 'neg' : ''}">${v > 0 ? '+' : ''}${fmtMoney(v)}</td></tr>`).join('')}
+      <tr><td><b>סה״כ</b></td><td class="${r.total >= 0 ? 'pos' : 'neg'}"><b>${r.total > 0 ? '+' : ''}${fmtMoney(r.total)}</b></td></tr></table>
+    <div class="stat"><div><span>חוסלו:</span> ${M.stats.kills}</div><div><span>אזרחים שנפגעו:</span> ${M.stats.civ}</div><div><span>תחמושת:</span> ${used.join(', ') || 'לא נורתה'}</div><div><span>תקציב:</span> ${fmtMoney(S.money)}</div></div>
+    ${after !== before ? `<p class="pos" style="font-weight:700">דרגה חדשה: ${after}!</p>` : ''}
+    <div style="display:flex;gap:8px;margin-top:8px"><button class="btn pri" style="flex:1" onclick="UI.toBase()">חזרה לבסיס</button>${!M.win && M.cardIdx !== undefined ? '<button class="btn" onclick="UI.retry()">ניסיון חוזר</button>' : ''}</div>
+  </div></div>`);
+}
+UI.toBase = () => { demoInit(); showBase('missions'); };
+UI.retry = () => { const i = M && M.cardIdx; demoInit(); showBase('missions'); if (i !== undefined) UI.brief(i); };
+
+/* ---------- הגדרות, עזרה, הפסקה ---------- */
+UI.settings = () => {
+  showModal(`<button class="x" onclick="closeModal()" aria-label="סגירה">✕</button><h2>הגדרות</h2>
+    <div class="toggle"><span>צלילים</span><button class="btn sm ${SET.sound ? 'pri' : ''}" onclick="UI.tog('sound')">${SET.sound ? 'פועל' : 'כבוי'}</button></div>
+    <div class="toggle"><span>הקראה קולית בעברית${HE_VOICE ? '' : ' <small class="note">(אין קול עברי במכשיר)</small>'}</span><button class="btn sm ${SET.voice ? 'pri' : ''}" onclick="UI.tog('voice')">${SET.voice ? 'פועל' : 'כבוי'}</button></div>
+    <div class="toggle"><span>עוצמה</span><input type="range" min="0" max="1" step="0.05" value="${SET.vol}" oninput="UI.vol(this.value)" style="width:150px"></div>
+    ${S ? '<div class="toggle"><span>איפוס כל ההתקדמות</span><button class="btn sm red" onclick="UI.reset()">איפוס</button></div>' : ''}
+    <div style="margin-top:14px"><button class="btn" onclick="closeModal()">סגירה</button></div>`, true);
+};
+UI.tog = k => { SET[k] = !SET[k]; saveSet(); auVol(); if (k === 'sound' && !SET.sound) humStop(); else if (k === 'sound' && M && !M.over) humStart(); UI.settings(); };
+UI.vol = v => { SET.vol = +v; saveSet(); auVol(); };
+UI.reset = () => confirmBox('למחוק את כל ההתקדמות?', 'מחיקה', () => { try { localStorage.removeItem(SAVE_KEY); } catch (e) { } S = null; M = null; paused = false; humStop(); showMenu(); });
+UI.help = () => showModal(`<button class="x" onclick="closeModal()" aria-label="סגירה">✕</button><div class="help"><h2>איך משחקים</h2>
+  <p>אתם מפעילי רחפן. הרחפן חג לבד מעל אזור המשימה, ואתם מזיזים את המצלמה, עושים זום, מזהים ויורים. הירי תמיד הולך למרכז הכוונת.</p>
+  <h3>בטלפון</h3><ul>
+  <li>גרירה — הזזת המצלמה. צביטה — זום. הקשה על המפה — המצלמה עוברת לשם.</li>
+  <li><b>אש</b> — ירי בנשק שנבחר (במקלע מחזיקים). בוחרים נשק בשורה למטה.</li>
+  <li><b>סמן</b> — זיהוי של מה שבכוונת: אדם (מזום x4), רכב או מבנה.</li>
+  <li><b>הזז מסלול</b> ואז הקשה על המפה — הרחפן עובר לחוג שם. אפשר גם להקיש על המפה הקטנה.</li>
+  <li><b>גובה</b> — בגובה רב מקלעי נ״מ לא מגיעים אליכם, אבל רואים פחות טוב והירי פחות מדויק.</li>
+  <li><b>נוריות</b> — כשמופיע ״טיל באוויר״ לוחצים מיד, כדי להטעות את הטיל.</li></ul>
+  <h3>במחשב</h3><ul>
+  <li>גרירה בעכבר, WASD או חצים — הזזה. גלגלת או Q/E — זום. לחיצה על המפה — המצלמה עוברת לשם.</li>
+  <li>רווח — ירי · 1–6 — נשק · M — סימון · T — תרמי · F — נוריות · H — גובה · O — הזזת מסלול · B — תקיפת מטוס · P — הפסקה.</li></ul>
+  <h3>טיפים</h3><ul>
+  <li>לכל נשק יש זמן מעוף, והמטרה יכולה לזוז בינתיים. לרכבים בתנועה עדיפה תחמושת משוטטת, או טיל עם מסמן לייזר.</li>
+  <li>רק בזום רואים מי מחזיק נשק. פגיעה באזרחים מורידה מהתגמול.</li>
+  <li>כשכוחותינו או בניין החטופים בטווח הפגיעה, הכוונת מאדימה וצריך ללחוץ פעמיים כדי לאשר.</li>
+  <li>אחרי כל משימה מקבלים כסף, ובחנות קונים רחפנים, תחמושת, חיישנים ומיגון.</li>
+  <li>רחפן שנפגע — משלמים על תיקון. רחפן שהופל — המשימה נכשלת ומשלמים על שיקום.</li></ul></div>
+  <div style="margin-top:12px"><button class="btn pri" onclick="closeModal()">הבנתי</button></div>`);
+UI.pause = () => {
+  if (!M || M.over) return; paused = true; firing = false; $('fireBtn').classList.remove('held');
+  showModal(`<h2>הפסקה</h2><p class="note">מבצע ׳${esc(M.card.name)}׳ · ${MTYPES[M.type].name}</p>
+    <div class="menu" style="margin-top:12px"><button class="btn pri" onclick="UI.resume()">המשך</button><button class="btn" onclick="UI.help()">איך משחקים</button><button class="btn" onclick="UI.settings()">הגדרות</button><button class="btn red" onclick="UI.abort()">נטישת המשימה</button></div>`);
+};
+UI.resume = () => { hideModal(); paused = false; };
+UI.abort = () => { hideModal(); paused = false; endMission(false, 'המשימה ננטשה'); };
+
+/* ---------- HUD ---------- */
+let lastTimerTxt = '';
+function showHUD() {
+  $('hud').classList.remove('hidden'); $('msgs').innerHTML = '';
+  $('objBox').classList.remove('hidden'); clearTimeout(showHUD.t); showHUD.t = setTimeout(() => $('objBox').classList.add('hidden'), 9000);
+  $('thBtn').classList.toggle('on', thermal); $('thBtn').classList.toggle('dis', !upv('thermal'));
+  $('flareN').textContent = drone.flares; $('airN').textContent = S.air; $('airBtn').classList.toggle('dis', S.air <= 0);
+  $('altBtn').textContent = 'גובה: נמוך'; $('altBtn').classList.remove('on'); $('orbitBtn').classList.remove('on'); $('banner').classList.add('hidden');
+  renderObjs(); buildWeapRow(); lastTimerTxt = '';
+}
+function renderObjs() {
+  if (!M) return;
+  const vis = M.objs.filter(o => !o.hidden);
+  $('objBox').innerHTML = `<h4>מבצע ׳${esc(M.card.name)}׳ — ${MTYPES[M.type].name} (${M.Df.name})</h4>` +
+    vis.map(o => `<div class="o${o.done ? ' done' : ''}${o.fail ? ' fail' : ''}${o.opt ? ' opt' : ''}">${esc(o.text)}</div>`).join('');
+  const req = vis.filter(o => !o.opt);
+  $('objBtn').textContent = `יעדים ${req.filter(o => o.done).length}/${req.length}`;
+}
+function buildWeapRow() {
+  const row = $('weapRow'); row.innerHTML = '';
+  loadout.forEach((s, i) => {
+    const b = document.createElement('button'); b.className = 'hb wb';
+    b.innerHTML = `<span>${WEAPONS[s.w].short}</span><small>${s.n}</small>`;
+    b.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); selW = i; updWeapRow(); SFX.click(); });
+    row.appendChild(b);
+  });
+  updWeapRow();
+}
+function updWeapRow() {
+  [...$('weapRow').children].forEach((b, i) => { b.classList.toggle('on', i === selW); b.querySelector('small').textContent = loadout[i].n; b.classList.toggle('dis', loadout[i].n <= 0); });
+}
+function hudTick() {
+  const t = mmss(M.timeLeft);
+  if (t !== lastTimerTxt) { $('timer').textContent = t; lastTimerTxt = t; $('timer').classList.toggle('low', M.timeLeft < 30); }
+  $('flareBtn').classList.toggle('alert', emiss.length > 0);
+}
+function radio(text, cls, voice) {
+  const box = $('msgs'), now = performance.now();
+  if (radio.last === text && now - radio.lastT < 4000) return;
+  radio.last = text; radio.lastT = now;
+  const d = document.createElement('div');
+  d.className = 'msg ' + (cls || ''); d.textContent = text; box.appendChild(d);
+  while (box.children.length > 4) box.firstChild.remove();
+  setTimeout(() => { d.style.opacity = '0'; setTimeout(() => d.remove(), 700); }, 5000 + text.length * 45);
+  SFX.radio(); if (voice) say(text);
+}
+function toggleThermal() {
+  if (!upv('thermal')) { radio('אין מצלמה תרמית — אפשר לקנות בחנות', 'warn'); return; }
+  thermal = !thermal; $('thBtn').classList.toggle('on', thermal); SFX.click();
+}
+function toggleAlt() {
+  if (!drone || drone.down) return;
+  drone.altHigh = !drone.altHigh; $('altBtn').textContent = drone.altHigh ? 'גובה: רב' : 'גובה: נמוך'; $('altBtn').classList.toggle('on', drone.altHigh);
+  radio(drone.altHigh ? 'מטפסים לגובה רב — מחוץ לטווח מקלעי נ״מ, אבל התמונה רחוקה יותר' : 'יורדים לגובה נמוך — תמונה חדה וירי מדויק יותר'); SFX.click();
+}
+function toggleOrbit() {
+  orbitMode = !orbitMode; $('orbitBtn').classList.toggle('on', orbitMode);
+  const b = $('banner'); b.textContent = 'הקישו על המפה (או על המפה הקטנה) כדי להעביר לשם את מסלול הרחפן'; b.classList.toggle('hidden', !orbitMode); SFX.click();
+}
+
+/* ---------- קלט ---------- */
+function bindInput() {
+  const on = (id, fn) => $(id).addEventListener('click', e => { e.stopPropagation(); auInit(); if (!M || M.over || paused) { if (id === 'pauseBtn') fn(); return; } fn(); });
+  on('pauseBtn', UI.pause);
+  on('objBtn', () => $('objBox').classList.toggle('hidden'));
+  $('objBox').addEventListener('click', () => $('objBox').classList.add('hidden'));
+  on('zIn', () => { cam.zt = clamp(cam.zt * 1.6, 1, maxZoom()); });
+  on('zOut', () => { cam.zt = clamp(cam.zt / 1.6, 1, maxZoom()); });
+  on('thBtn', toggleThermal); on('markBtn', doMark); on('flareBtn', () => deployFlares(false));
+  on('altBtn', toggleAlt); on('orbitBtn', toggleOrbit); on('airBtn', callAir);
+  const fb = $('fireBtn');
+  fb.addEventListener('pointerdown', e => { e.preventDefault(); auInit(); if (!M || paused) return; firing = true; fb.classList.add('held'); fire(false); });
+  const up = () => { firing = false; fb.classList.remove('held'); };
+  fb.addEventListener('pointerup', up); fb.addEventListener('pointercancel', up); fb.addEventListener('pointerleave', up);
+  miniCv.addEventListener('pointerdown', e => {
+    e.preventDefault(); e.stopPropagation(); if (!M || M.over || paused || !drone) return;
+    const r = miniCv.getBoundingClientRect(); setOrbit((e.clientX - r.left) / r.width * WORLD, (e.clientY - r.top) / r.height * WORLD);
+  });
+  const ptrs = new Map(); let pinch = null;
+  const panBy = (dx, dy) => { const sc = scaleNow(); cam.x -= dx * DPR / sc; cam.y -= dy * DPR / sc; cam.slew = null; };
+  cv.addEventListener('pointerdown', e => {
+    auInit(); if (!M || paused) return;
+    try { cv.setPointerCapture(e.pointerId); } catch (er) { }
+    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: performance.now(), moved: false });
+    if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, z: cam.z, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 }; a.moved = b.moved = true; }
+  });
+  cv.addEventListener('pointermove', e => {
+    const p = ptrs.get(e.pointerId); if (!p) return;
+    const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
+    if (ptrs.size === 1) { if (!p.moved && Math.hypot(p.x - p.sx, p.y - p.sy) > 7) p.moved = true; if (p.moved) panBy(dx, dy); }
+    else if (ptrs.size === 2 && pinch) {
+      const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
+      cam.zt = cam.z = clamp(pinch.z * d / pinch.d, 1, maxZoom());
+      const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2; panBy(mx - pinch.mx, my - pinch.my); pinch.mx = mx; pinch.my = my;
+    }
+  });
+  const endPtr = e => {
+    const p = ptrs.get(e.pointerId); if (!p) return; ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null;
+    if (e.type === 'pointerup' && !p.moved && ptrs.size === 0 && performance.now() - p.t < 400 && M && !M.over) {
+      const w = s2w(p.x * DPR, p.y * DPR); if (orbitMode) setOrbit(w.x, w.y); else cam.slew = { x: w.x, y: w.y };
+    }
+  };
+  cv.addEventListener('pointerup', endPtr); cv.addEventListener('pointercancel', endPtr);
+  cv.addEventListener('wheel', e => { e.preventDefault(); if (!M) return; cam.zt = clamp(cam.zt * Math.exp(-e.deltaY * 0.0016), 1, maxZoom()); }, { passive: false });
+  cv.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('gesturestart', e => e.preventDefault());
+  addEventListener('keydown', e => {
+    if (!M || M.over || (e.target && e.target.tagName === 'INPUT')) return;
+    if (paused) { if (e.code === 'KeyP' || e.code === 'Escape') UI.resume(); return; }
+    keys[e.code] = true; auInit();
+    switch (e.code) {
+      case 'Space': e.preventDefault(); if (!e.repeat) { firing = true; fire(false); } break;
+      case 'KeyM': doMark(); break; case 'KeyT': toggleThermal(); break; case 'KeyF': deployFlares(false); break;
+      case 'KeyH': toggleAlt(); break; case 'KeyO': toggleOrbit(); break; case 'KeyB': callAir(); break;
+      case 'KeyP': case 'Escape': UI.pause(); break;
+      default: if (/^Digit[1-6]$/.test(e.code)) { const i = +e.code.slice(5) - 1; if (loadout[i]) { selW = i; updWeapRow(); } }
+    }
+  });
+  addEventListener('keyup', e => { keys[e.code] = false; if (e.code === 'Space') firing = false; });
+  addEventListener('blur', () => { for (const k in keys) keys[k] = false; firing = false; });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && M && !M.over && !paused) UI.pause(); });
+}
+
+/* ---------- לולאה ראשית ---------- */
+let lastT = performance.now();
+function frame(t) {
+  const dt = Math.min(0.05, Math.max(0, (t - lastT) / 1000)); lastT = t; frameN++;
+  try { update(dt); render(); } catch (err) { console.error(err); }
+  requestAnimationFrame(frame);
+}
+addEventListener('resize', resize);
+resize(); bindInput(); showMenu(); requestAnimationFrame(frame);
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => { });
+</script>
+</body>
+</html>
