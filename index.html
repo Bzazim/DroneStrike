@@ -258,7 +258,7 @@ const DIFFS = [
   { name: 'קשה מאוד', mult: 3.4, time: 0.9, en: 1.6, aa: 3, acc: 1.2, force: 'רב מאוד' },
   { name: 'מומחה', mult: 5, time: 0.8, en: 2, aa: 4, acc: 1.4, force: 'מסיבי' },
 ];
-const AA_TXT = ['אין', 'מקלע נ״מ', 'מקלעים וטיל כתף', 'מקלעים וטילי כתף', 'נ״מ כבד'];
+function aaLabel(diff, zone) { const v = DIFFS[diff].aa * ZONES[zone].aa; return !v ? 'אין' : v < 0.7 ? 'נמוך' : v < 1.5 ? 'בינוני' : v < 2.5 ? 'גבוה' : 'גבוה מאוד'; }
 const TOD_TXT = { day: 'יום', dusk: 'דמדומים', night: 'לילה' };
 const TNAME = { launcher: 'משגר רקטות', technical: 'טנדר חמוש', cache: 'מצבור נשק', depot: 'מחסן אמצעי לחימה', shaft: 'פיר מנהרה' };
 const OPNAMES = ['ברק שקט', 'צל ארוך', 'אבן חדה', 'שחר אדום', 'קשת ירוקה', 'רוח צפונית', 'זאב בודד', 'חול נודד', 'כוכב נופל', 'שועל לילה', 'סלע איתן', 'מים עמוקים', 'להב כחול', 'עין חדה', 'נץ אפור', 'אש קרה', 'גשר אור', 'שער ברזל', 'חוט השני', 'ענן נמוך', 'גל שקט', 'יד ארוכה', 'קו אדום', 'מגדל לבן', 'אלון', 'ברוש', 'רימון', 'תאנה', 'צבר', 'דקל'];
@@ -309,8 +309,9 @@ function tone(freq, dur, type, vol, delay, f1) {
   o.connect(g); g.connect(AU.master); o.start(t); o.stop(t + dur + 0.05);
 }
 const SFX = {
-  boom(r) { const s = clamp(r / 14, 0.25, 1.7); nz(0.5 + s * 0.9, 700 * s + 300, 40, 'lowpass', Math.min(1, 0.35 + s * 0.5)); tone(70, 0.4 + s * 0.5, 'sine', Math.min(0.8, 0.3 * s + 0.2), 0, 28); },
+  boom(r) { const s = clamp(r / 14, 0.25, 1.9); nz(0.5 + s * 1.1, 700 * s + 300, 40, 'lowpass', Math.min(1, 0.35 + s * 0.5)); tone(70, 0.4 + s * 0.6, 'sine', Math.min(0.8, 0.3 * s + 0.2), 0, 28); if (s > 1) nz(2.5 * s, 260, 30, 'lowpass', 0.35, 1, 0.15); },
   launch() { nz(0.9, 500, 2600, 'bandpass', 0.22, 2); },
+  crack() { nz(0.14, 3800, 900, 'bandpass', 0.35, 1.2); },
   drop() { tone(900, 0.3, 'sine', 0.05, 0, 300); },
   gun() { const c = AU.ctx; if (!c) return; if (c.currentTime - AU.gunT < 0.05) return; AU.gunT = c.currentTime; nz(0.07, 3200, 900, 'bandpass', 0.22, 1.4); },
   far() { const c = AU.ctx; if (!c) return; if (c.currentTime - AU.gunT < 0.12) return; AU.gunT = c.currentTime; nz(0.05, 1800, 700, 'bandpass', 0.06, 1.2); },
@@ -345,9 +346,9 @@ function say(text) {
    עולם: יצירת מפה פרוצדורלית (כבישים, בניינים, מטעים, שדות, תבליט)
    ===================================================================== */
 const ZONES = {
-  urban: { name: 'מרחב עירוני צפוף', sector: 'גזרה דרומית', sp: 86, jit: 8, rem: 0.07, cores: 1, coreR: [560, 720], base: 0.14, ground: [156, 148, 130], hill: 0.15, civ: 70, cars: 14 },
-  village: { name: 'כפרים ומטעים', sector: 'גזרה צפונית', sp: 128, jit: 22, rem: 0.22, cores: 3, coreR: [200, 270], base: 0.03, ground: [132, 131, 104], hill: 1, civ: 42, cars: 9 },
-  open: { name: 'שטח פתוח ומתחמים', sector: 'גזרה מזרחית', sp: 185, jit: 30, rem: 0.33, cores: 2, coreR: [160, 210], base: 0, ground: [170, 154, 122], hill: 0.8, civ: 24, cars: 6 },
+  urban: { name: 'מרחב עירוני צפוף', sector: 'גזרה דרומית', aa: 0.3, aaAcc: 0.6, threat: 'נמוך', sp: 86, jit: 8, rem: 0.07, cores: 1, coreR: [560, 720], base: 0.14, ground: [156, 148, 130], hill: 0.15, civ: 70, cars: 14 },
+  village: { name: 'כפרים ומטעים', sector: 'גזרה צפונית', aa: 1, aaAcc: 1, threat: 'גבוה', sp: 128, jit: 22, rem: 0.22, cores: 3, coreR: [200, 270], base: 0.03, ground: [132, 131, 104], hill: 1, civ: 42, cars: 9 },
+  open: { name: 'שטח פתוח ומתחמים', sector: 'גזרה מזרחית', aa: 0.6, aaAcc: 0.8, threat: 'בינוני', sp: 185, jit: 30, rem: 0.33, cores: 2, coreR: [160, 210], base: 0, ground: [170, 154, 122], hill: 0.8, civ: 24, cars: 6 },
 };
 const TILE = 250, TN = Math.ceil(WORLD / TILE);
 const DAY_B = ['#b8b2a3', '#a39e91', '#c7c1b2', '#918d82'], TH_B = ['#5c5c5c', '#666666', '#545454', '#717171'];
@@ -948,7 +949,7 @@ function spawnTechnical(sq, msg) {
   for (let t = 0; t < 100; t++) { const k = WD.randNode(40), N = WD.nodes[k], d = dist(N.x, N.y, L.x, L.y); if (d > 260 && d < 430) { s = k; break; } }
   if (s < 0) return null;
   const r = WD.route(s, WD.nodeNear(L.x, L.y)); if (!r || r.length < 2) return null;
-  const v = mkV('enemy', 'technical', 0, 0, { st: 'hunt', huntSq: sq, aa: true, vmax: 12, off: 2.6 });
+  const v = mkV('enemy', 'technical', 0, 0, { st: 'hunt', huntSq: sq, aa: M.Df.aa > 0 && R() < ZONES[M.zone].aa, vmax: 12, off: 2.6 });
   setRoute(v, r); const p = roadPos(v); v.x = p.x; v.y = p.y; v.ang = p.ang;
   radio(msg || `כוח ׳${sq.name}׳: טנדר חמוש מתקרב אלינו!`, 'friend', true);
   return v;
@@ -970,32 +971,33 @@ function updHelis(dt) {
 /* ---------- נ״מ ואיומים על הרחפן ---------- */
 function updAA(e, dt) {
   if (!drone || drone.down || M.over) return;
-  const rng = 300 * drone.stealth, d = dist(e.x, e.y, drone.x, drone.y), low = drone.altF > 0.85;
+  if (!M.Df.aa) return;   // בקל אין ירי על הרחפן בכלל
+  const rng = 260 * drone.stealth, d = dist(e.x, e.y, drone.x, drone.y), low = drone.altF > 0.85;
   if (e.burst > 0) {
     e.burst -= dt; e.ft = (e.ft || 0) - dt;
     if (e.ft <= 0) {
       e.ft = 0.09; const a = Math.atan2(drone.y - e.y, drone.x - e.x) + gauss() * 0.08;
       tracer(e.x, e.y, e.x + Math.cos(a) * 95, e.y + Math.sin(a) * 95, 'aa');
-      if (low && d < rng && chance(0.11 * M.Df.acc * upv('ew') * drone.stealth)) hitDrone(rnd(3, 5), 'מקלע נ״מ');
+      if (low && d < rng && chance(0.07 * M.aaAcc * upv('ew') * drone.stealth)) hitDrone(rnd(2, 4), 'מקלע נ״מ');
     }
     return;
   }
   e.aacd = (e.aacd === undefined ? rnd(4, 10) : e.aacd) - dt;
   if (e.aacd <= 0 && d < rng * (low ? 1 : 1.3)) {
-    e.burst = rnd(1, 2); e.aacd = rnd(3, 6) / M.Df.acc;
+    e.burst = rnd(0.8, 1.6); e.aacd = rnd(5, 9) / M.aaAcc;
     if (onScreen(e.x, e.y, 0)) SFX.far();
     if (!M.flags.aaWarn) { M.flags.aaWarn = true; radio('ירי נ״מ לעבר הרחפן! טפסו לגובה רב או חסלו את המקלע', 'bad', true); }
     M.aaAlert = 2;
   }
 }
 function tryManpads(e, dt) {
-  if (!drone || drone.down || e.inside || M.over) return;
+  if (!drone || drone.down || e.inside || M.over || !M.Df.aa) return;
   if (e.mcd === undefined) { e.mcd = rnd(20, 40); e.ammo = M.diff >= 4 ? 3 : 2; }
   if (e.ammo <= 0) return;
   e.mcd -= dt; if (e.mcd > 0) return;
   const rng = 380 * drone.stealth * (drone.altF < 0.85 ? 0.85 : 1);
   if (dist(e.x, e.y, drone.x, drone.y) > rng) { e.mcd = 1; return; }
-  e.mcd = rnd(35, 55) / M.Df.acc; e.ammo--;
+  e.mcd = rnd(40, 60) / M.aaAcc; e.ammo--;
   if (!e.marked) { e.marked = true; later(1.2, () => radio('מקור השיגור סומן — חסלו את צוות טיל הכתף', 'warn')); }
   emiss.push({ sx: e.x, sy: e.y, x: e.x, y: e.y, t: 0, T: upv('maws') ? 5 : 3.4, flared: drone.flareT > 0 });
   SFX.launch(); radio('טיל באוויר! הפעילו נוריות!', 'bad', true); $('objBox').classList.add('hidden');
@@ -1009,8 +1011,8 @@ function updEmiss(dt) {
     if (chance(dt * 45)) parts.push({ k: 'trail', x: m.x, y: m.y, vx: 0, vy: 0, r: 1.1, gr: 1.4, t: 0, life: 3.5, a: 0.55 });
     if (m.t >= m.T) {
       emiss.splice(i, 1); if (drone.down || M.over) continue;
-      if (m.flared && chance(upv('maws') ? 0.97 : 0.85)) radio('הטיל הוטעה ע״י הנוריות', 'good');
-      else hitDrone(rnd(35, 45), 'טיל כתף');
+      if (m.flared && chance(upv('maws') ? 0.98 : 0.9)) radio('הטיל הוטעה ע״י הנוריות', 'good');
+      else hitDrone(rnd(28, 38), 'טיל כתף');
     }
   }
   if (emiss.length) { M.alarmT = (M.alarmT || 0) - dt; if (M.alarmT <= 0) { SFX.alarm(); M.alarmT = 0.45; } }
@@ -1037,8 +1039,8 @@ function kill(e, src) {
   if (!e.alive) return;
   e.alive = false; e.hp = 0; e.deadT = 0; e.killedBy = src; e.moving = false;
   if (e.k !== 'p') {
-    e.burn = rnd(15, 30); fxExplosion(e.x, e.y, e.k === 'v' ? 6 : 5, true);
-    if (e.role === 'cache' || e.role === 'launcher' || e.role === 'crates') for (let i = rint(2, 4); i > 0; i--) later(rnd(0.3, 2.2), () => explode(e.x + gauss() * 6, e.y + gauss() * 6, 4, 50, { src: 'sec', bdmg: 0.3 }));
+    e.burn = rnd(15, 30); fxExplosion(e.x, e.y, e.k === 'v' ? 6 : 5, true, e.k === 'v' ? 'vehicle' : 'sec');
+    if (e.role === 'cache' || e.role === 'launcher' || e.role === 'crates') for (let i = rint(2, 4); i > 0; i--) later(rnd(0.3, 2.2), () => explode(e.x + gauss() * 6, e.y + gauss() * 6, 4, 50, { src: 'sec', bdmg: 0.3, fx: 'sec' }));
   }
   if (!M) return;
   if (src === 'player') {
@@ -1053,7 +1055,7 @@ function kill(e, src) {
 }
 function explode(x, y, Rr, dmg, o) {
   o = o || {}; const src = o.src || 'player', bd = o.bdmg === undefined ? 1 : o.bdmg, lt = o.light === undefined ? 1 : o.light;
-  if (o.small) fxPuff(x, y); else fxExplosion(x, y, Rr);
+  if (o.small) fxPuff(x, y); else fxExplosion(x, y, Rr, false, o.fx);
   const ruined = [];
   for (const b of WD.bNear(x, y, Rr)) {
     if (b.ruined) continue;
@@ -1071,41 +1073,86 @@ function explode(x, y, Rr, dmg, o) {
   }
   if (M && HOOK().onRuin) for (const b of ruined) HOOK().onRuin(b, src);
 }
-function fxExplosion(x, y, Rr, quiet) {
-  parts.push({ k: 'flash', x, y, r: Rr * 2.4, t: 0, life: 0.28 });
-  parts.push({ k: 'ring', x, y, r: Rr * 0.4, vr: Rr * 7, t: 0, life: 0.4 });
-  const n = Math.min(36, 6 + Rr * 2);
-  for (let i = 0; i < n; i++) parts.push({ k: 'fire', x: x + gauss() * Rr * 0.3, y: y + gauss() * Rr * 0.3, vx: gauss() * Rr * 1.4, vy: gauss() * Rr * 1.4, r: rnd(Rr * 0.25, Rr * 0.55), t: 0, life: rnd(0.35, 0.85) });
-  for (let i = 0; i < n * 0.8; i++) parts.push({ k: 'smoke', x: x + gauss() * Rr * 0.4, y: y + gauss() * Rr * 0.4, vx: gauss() * Rr * 0.5, vy: gauss() * Rr * 0.5, r: rnd(Rr * 0.35, Rr * 0.7), gr: Rr * 0.22 + 0.4, t: 0, life: rnd(4, 10), a: rnd(0.45, 0.75) });
-  for (let i = 0; i < n * 0.6; i++) parts.push({ k: 'debris', x, y, vx: gauss() * Rr * 3.5, vy: gauss() * Rr * 3.5, t: 0, life: rnd(0.5, 1.2) });
-  decals.push({ x, y, r: Rr * 0.95, t: 0 }); if (decals.length > 90) decals.shift();
+/* פיצוצים: פרופיל לפי סוג הנשק וגודל הפיצוץ */
+const FXP = {
+  grenade: { flash: 2, fire: 6, fireR: [0.25, 0.45], fireL: [0.12, 0.3], dust: 14, dustSp: 3.2, smoke: 5, smokeC: 'g', debris: 10, dz: [6, 14], sparks: 6, shock: 0.6, embers: 0, decal: 0.8 },
+  missile: { flash: 2.6, fire: 12, fireR: [0.3, 0.55], fireL: [0.25, 0.6], dust: 14, dustSp: 3, smoke: 12, smokeC: 'd', debris: 14, dz: [8, 20], sparks: 16, shock: 1, embers: 1, decal: 0.9 },
+  bomb: { flash: 3, fire: 26, fireR: [0.25, 0.6], fireL: [0.5, 1.4], dust: 34, dustSp: 3.4, smoke: 30, smokeC: 'd', debris: 30, dz: [12, 34], sparks: 22, shock: 1.3, embers: 5, decal: 1, column: true },
+  air: { flash: 3.4, fire: 32, fireR: [0.25, 0.6], fireL: [0.6, 1.6], dust: 40, dustSp: 3.4, smoke: 36, smokeC: 'd', debris: 36, dz: [14, 40], sparks: 26, shock: 1.4, embers: 6, decal: 1, column: true },
+  bunker: { flash: 1.4, fire: 6, fireR: [0.3, 0.5], fireL: [0.2, 0.5], dust: 34, dustSp: 1.6, smoke: 6, smokeC: 'u', debris: 26, dz: [16, 40], sparks: 4, shock: 0.8, embers: 0, decal: 1.2, delay: 0.3, heave: true },
+  vehicle: { flash: 2.4, fire: 14, fireR: [0.35, 0.6], fireL: [0.4, 1], dust: 6, dustSp: 2, smoke: 16, smokeC: 'd', debris: 16, dz: [8, 22], sparks: 14, shock: 0.8, embers: 2, decal: 0.9 },
+  rpg: { flash: 2, fire: 7, fireR: [0.3, 0.5], fireL: [0.15, 0.4], dust: 10, dustSp: 3, smoke: 6, smokeC: 'g', debris: 8, dz: [6, 14], sparks: 8, shock: 0.6, embers: 0, decal: 0.8 },
+  sec: { flash: 1.8, fire: 8, fireR: [0.3, 0.55], fireL: [0.2, 0.5], dust: 4, dustSp: 2, smoke: 6, smokeC: 'd', debris: 6, dz: [6, 16], sparks: 10, shock: 0.5, embers: 1, decal: 0.6 },
+};
+function fxExplosion(x, y, Rr, quiet, kind) {
+  kind = FXP[kind] ? kind : Rr <= 5.5 ? 'grenade' : Rr >= 15 ? 'bomb' : 'missile';
+  const P = FXP[kind], d0 = P.delay || 0, big = Rr >= 12;
+  if (d0) { // פצצה חודרת: קודם חדירה קטנה, ואז התרוממות של הקרקע
+    parts.push({ k: 'flash', x, y, r: Rr * 0.8, t: 0, life: 0.12 });
+    for (let i = 0; i < 5; i++) parts.push({ k: 'smoke', c: 'u', x: x + gauss(), y: y + gauss(), vx: gauss() * 4, vy: gauss() * 4, r: rnd(1, 2), gr: 1.5, t: 0, life: rnd(1.5, 3), a: 0.7, drag: 3 });
+  }
+  parts.push({ k: 'flash', x, y, r: Rr * P.flash, t: -d0, life: big ? 0.35 : 0.2 });
+  parts.push({ k: 'shock', x, y, r: Rr * 0.3, vr: Rr * 9 * P.shock, t: -d0, life: big ? 0.45 : 0.28 });
+  if (big) parts.push({ k: 'shock', x, y, r: Rr * 0.2, vr: Rr * 4, t: -d0 - 0.05, life: 0.7, a: 0.35 });
+  for (let i = 0; i < P.fire; i++) {
+    const a = rnd(TAU), sp = rnd(0.2, 1.3) * Rr * (big ? 1.1 : 1.6), l = rnd(P.fireL[0], P.fireL[1]);
+    parts.push({ k: 'fireball', x: x + gauss() * Rr * 0.15, y: y + gauss() * Rr * 0.15, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: Rr * rnd(P.fireR[0], P.fireR[1]), gr: Rr * 0.25, t: -d0 - rnd(0, 0.08), life: l, drag: 4 });
+    // כדור האש הופך לעשן
+    if (chance(0.5)) parts.push({ k: 'smoke', c: P.smokeC === 'u' ? 'u' : 'd', x: x + Math.cos(a) * sp * l * 0.4, y: y + Math.sin(a) * sp * l * 0.4, vx: Math.cos(a) * sp * 0.25, vy: Math.sin(a) * sp * 0.25, r: Rr * rnd(0.2, 0.35), gr: Rr * 0.08 + 0.4, t: -d0 - l * 0.7, life: rnd(4, 9) * (big ? 1.4 : 1), a: rnd(0.35, 0.6), hot: 1, drag: 1.2 });
+  }
+  for (let i = 0; i < P.dust; i++) { // טבעת אבק שנזרקת לצדדים
+    const a = rnd(TAU), sp = Rr * P.dustSp * rnd(0.6, 1.3);
+    parts.push({ k: 'smoke', c: 'u', x: x + Math.cos(a) * Rr * 0.3, y: y + Math.sin(a) * Rr * 0.3, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: Rr * rnd(0.2, 0.4) + 0.5, gr: Rr * 0.12 + 0.4, t: -d0 - rnd(0, 0.1), life: rnd(2.5, 6) * (P.heave ? 1.8 : 1), a: rnd(0.5, 0.75), drag: P.heave ? 1.6 : 2.6 });
+  }
+  for (let i = 0; i < P.smoke; i++) { // עמוד עשן שנשאר ונסחף ברוח
+    const c = P.smokeC === 'd' ? (chance(0.5) ? 'd' : 'g') : P.smokeC;
+    parts.push({ k: 'smoke', c, x: x + gauss() * Rr * 0.35, y: y + gauss() * Rr * 0.35, vx: gauss() * Rr * 0.3, vy: gauss() * Rr * 0.3, r: Rr * rnd(0.25, 0.45), gr: Rr * (P.column ? 0.16 : 0.12) + 0.3, t: -d0 - rnd(0.1, 0.8), life: rnd(7, 14) * (P.column ? 1.5 : 1), a: rnd(0.3, 0.55), hot: c === 'd' ? 1 : 0, drag: 1.2, wind: P.column ? 1.4 : 1 });
+  }
+  for (let i = 0; i < P.debris; i++) {
+    const a = rnd(TAU), sp = Rr * rnd(1.5, 4.5), heavy = big && chance(0.3);
+    parts.push({ k: 'debris', x, y, z: 0.5, vz: rnd(P.dz[0], P.dz[1]), vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, s: rnd(0.3, heavy ? 1.4 : 0.8), t: -d0, life: rnd(1.6, 3.2), drag: 0.6, tr: heavy, hot: P.heave ? 0 : 1, dirt: P.heave || kind === 'grenade' });
+  }
+  for (let i = 0; i < P.sparks; i++) { const a = rnd(TAU), sp = Rr * rnd(5, 12); parts.push({ k: 'spark', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, t: -d0, life: rnd(0.12, 0.35), drag: 2 }); }
+  for (let i = 0; i < P.embers; i++) { const a = rnd(TAU), r = rnd(0.2, 0.9) * Rr; parts.push({ k: 'ember', x: x + Math.cos(a) * r, y: y + Math.sin(a) * r, r: rnd(0.6, 1.4) * (big ? 1.5 : 1), t: -d0 - rnd(0.2, 0.6), life: rnd(5, big ? 16 : 8), rate: big ? 5 : 3 }); }
+  decals.push({ x, y, r: Rr * P.decal, t: 0, crater: P.heave }); if (decals.length > 90) decals.shift();
   const vis = onScreen(x, y, 80);
-  if (!quiet || vis) SFX.boom(Rr);
-  if (vis) { shake = Math.min(1.2, shake + Rr / 16); flashT = Math.max(flashT, Math.min(0.22, Rr / 70)); }
+  if (!quiet || vis) { if (d0) later(d0, () => SFX.boom(Rr * 1.3)); else SFX.boom(Rr); if (!big) SFX.crack(); }
+  if (vis) { const k = () => { shake = Math.min(1.4, shake + Rr / 14); flashT = Math.max(flashT, Math.min(0.3, Rr / 55)); }; if (d0) later(d0, k); else k(); }
   trimParts();
 }
 function fxPuff(x, y) {
-  for (let i = 0; i < 3; i++) parts.push({ k: 'dust', x: x + gauss(), y: y + gauss(), vx: gauss() * 2, vy: gauss() * 2, r: rnd(0.5, 1), gr: 1.2, t: 0, life: rnd(0.6, 1.2), a: 0.6 });
-  parts.push({ k: 'spark', x, y, t: 0, life: 0.08, r: 1 });
+  for (let i = 0; i < 3; i++) parts.push({ k: 'smoke', c: 'u', x: x + gauss() * 0.5, y: y + gauss() * 0.5, vx: gauss() * 3, vy: gauss() * 3, r: rnd(0.4, 0.8), gr: 1.2, t: 0, life: rnd(0.6, 1.3), a: 0.6, drag: 4 });
+  for (let i = 0; i < 2; i++) { const a = rnd(TAU); parts.push({ k: 'spark', x, y, vx: Math.cos(a) * 25, vy: Math.sin(a) * 25, t: 0, life: 0.08, drag: 2 }); }
   trimParts();
 }
 function fxDust(b) {
-  const cx = b.x + b.w / 2, cy = b.y + b.h / 2, n = Math.min(40, 10 + b.w * b.h / 25);
-  for (let i = 0; i < n; i++) parts.push({ k: 'smoke', dust: true, x: cx + rnd(-b.w / 2, b.w / 2), y: cy + rnd(-b.h / 2, b.h / 2), vx: gauss() * 3, vy: gauss() * 3, r: rnd(3, 6), gr: 2, t: 0, life: rnd(6, 14), a: 0.6 });
+  const cx = b.x + b.w / 2, cy = b.y + b.h / 2, n = Math.min(46, 12 + b.w * b.h / 22), R0 = Math.max(b.w, b.h) / 2;
+  for (let i = 0; i < n; i++) { const a = rnd(TAU), r = rnd(0, R0); parts.push({ k: 'smoke', c: 'u', x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r, vx: Math.cos(a) * rnd(3, 9), vy: Math.sin(a) * rnd(3, 9), r: rnd(3, 6), gr: 1.8, t: -rnd(0, 0.5), life: rnd(7, 16), a: 0.65, drag: 1 }); }
+  for (let i = 0; i < 18; i++) { const a = rnd(TAU), sp = rnd(4, 14); parts.push({ k: 'debris', x: cx + gauss() * R0 * 0.4, y: cy + gauss() * R0 * 0.4, z: rnd(1, 5), vz: rnd(4, 12), vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, s: rnd(0.5, 1.3), t: 0, life: rnd(2, 3.5), drag: 0.6, dirt: true }); }
 }
 function trimParts() { if (parts.length > 1400) parts.splice(0, parts.length - 1400); }
 function muzzle(x, y, a) { parts.push({ k: 'muzzle', x: x + Math.cos(a) * 1.2, y: y + Math.sin(a) * 1.2, t: 0, life: 0.07, r: 1.2 }); }
 function tracer(x0, y0, x1, y1, kind) { tracers.push({ x0, y0, x1, y1, t: 0, life: kind === 'aa' ? 0.3 : 0.16, kind }); if (tracers.length > 300) tracers.shift(); }
 function updParts(dt) {
-  let j = 0;
+  let j = 0; const add = [];
   for (let i = 0; i < parts.length; i++) {
-    const p = parts[i]; p.t += dt; if (p.t >= p.life) continue;
-    if (p.vx !== undefined) { const f = Math.exp(-dt * (p.k === 'smoke' || p.k === 'trail' ? 1.2 : 3)); p.vx *= f; p.vy *= f; p.x += p.vx * dt; p.y += p.vy * dt; }
-    if (p.k === 'smoke' || p.k === 'trail' || p.k === 'dust') { p.x += WIND.x * dt; p.y += WIND.y * dt; p.r += (p.gr || 0) * dt; }
-    if (p.k === 'ring') p.r += p.vr * dt;
+    const p = parts[i]; p.t += dt;
+    if (p.t >= p.life) continue;
+    if (p.t < 0) { parts[j++] = p; continue; }
+    if (p.vx !== undefined) { const f = Math.exp(-dt * (p.drag || (p.k === 'smoke' || p.k === 'trail' ? 1.2 : 3))); p.vx *= f; p.vy *= f; p.x += p.vx * dt; p.y += p.vy * dt; }
+    switch (p.k) {
+      case 'smoke': case 'trail': case 'dust': { const w = p.wind || 1; p.x += WIND.x * w * dt; p.y += WIND.y * w * dt; p.r += (p.gr || 0) * dt * (1 - p.t / p.life * 0.6); break; }
+      case 'ring': case 'shock': p.r += p.vr * dt; p.vr *= Math.exp(-dt * 3); break;
+      case 'fireball': p.r += (p.gr || 0) * dt; break;
+      case 'debris':
+        if (p.z > 0) { p.z += p.vz * dt; p.vz -= 38 * dt; if (p.tr && chance(dt * 30)) add.push({ k: 'smoke', c: 'g', x: p.x, y: p.y, vx: 0, vy: 0, r: 0.35, gr: 0.8, t: 0, life: rnd(1.2, 2.4), a: 0.3 }); if (p.z <= 0) { p.z = 0; p.vx *= 0.15; p.vy *= 0.15; if (p.s > 0.9) add.push({ k: 'smoke', c: 'u', x: p.x, y: p.y, vx: 0, vy: 0, r: 0.8, gr: 1.5, t: 0, life: 1.6, a: 0.5 }); } }
+        else { p.vx *= 0.8; p.vy *= 0.8; }
+        break;
+      case 'ember': if (chance(dt * p.rate)) add.push({ k: 'smoke', c: 'd', x: p.x + gauss() * 0.5, y: p.y + gauss() * 0.5, vx: gauss(), vy: gauss(), r: p.r * 0.8, gr: 1.4, t: 0, life: rnd(4, 9), a: 0.55, hot: 1 }); break;
+    }
     parts[j++] = p;
   }
-  parts.length = j;
+  parts.length = j; for (const q of add) parts.push(q);
   j = 0; for (let i = 0; i < tracers.length; i++) { const t = tracers[i]; t.t += dt; if (t.t < t.life) tracers[j++] = t; } tracers.length = j;
 }
 function updRockets(dt) {
@@ -1113,7 +1160,7 @@ function updRockets(dt) {
     const r = rockets[i]; r.t += dt; const p = Math.min(1, r.t / r.T);
     r.x = lerp(r.sx, r.tx, p); r.y = lerp(r.sy, r.ty, p);
     if (chance(dt * 30)) parts.push({ k: 'trail', x: r.x, y: r.y, vx: 0, vy: 0, r: 0.6, gr: 0.8, t: 0, life: 1.6, a: 0.5 });
-    if (p >= 1) { rockets.splice(i, 1); explode(r.x, r.y, 4, 70, { src: 'enemy', bdmg: 0.4 }); }
+    if (p >= 1) { rockets.splice(i, 1); explode(r.x, r.y, 4, 70, { src: 'enemy', bdmg: 0.4, fx: 'rpg' }); }
   }
 }
 
@@ -1169,7 +1216,7 @@ function updShots(dt) {
 function impact(s) {
   const W = s.W; let sp = W.spread * (s.air ? 1 : upv('stab')) * (drone && drone.altF < 0.85 && !s.air ? 1.3 : 1); if (s.lock) sp *= 0.3;
   const x = s.x + gauss() * sp, y = s.y + gauss() * sp;
-  explode(x, y, W.radius, W.dmg, { src: 'player', bdmg: W.bdmg, light: W.light, small: W.radius <= 2 });
+  explode(x, y, W.radius, W.dmg, { src: 'player', bdmg: W.bdmg, light: W.light, small: W.radius <= 2, fx: s.air ? 'air' : s.w === 'loiter' ? 'missile' : s.w });
 }
 
 /* ---------- סימון וזיהוי ---------- */
@@ -1224,7 +1271,9 @@ function populateCommon() {
   for (let i = 0; i < carN; i++) { const ed = WD.randEdge(0); if (!ed) break; const v = mkV('civ', 'car', 0, 0, { st: 'drive' }); placeOnEdge(v, ed, rnd(), 2.6); }
 }
 function placeAA(cx, cy, rad) {
-  const lv = M.Df.aa, hm = [0, 1, 2, 2, 3][lv], mp = [0, 0, 1, 2, 3][lv];
+  const lv = M.Df.aa, Z = ZONES[M.zone]; if (!lv) return;
+  const sr = v => Math.floor(v + R());   // עיגול אקראי: 0.3 = סיכוי של 30% למקלע אחד
+  const hm = sr([0, 1, 1.6, 2, 2.6][lv] * Z.aa), mp = sr([0, 0.35, 0.9, 1.4, 2][lv] * Z.aa * (Z.aa < 0.5 ? 0.5 : 1));
   for (let i = 0; i < hm; i++) { const p = WD.openSpot(cx + rnd(-rad, rad), cy + rnd(-rad, rad), 50); mkS('hmg', p.x, p.y); mkP('enemy', 'rifle', p.x + 2.2, p.y + 1.6, { st: 'post' }); }
   for (let i = 0; i < mp; i++) { const p = WD.freeSpot(cx + rnd(-rad, rad), cy + rnd(-rad, rad), 50); mkP('enemy', 'manpads', p.x, p.y, { st: 'post', passive: true }); }
 }
@@ -1253,7 +1302,7 @@ MIS.strike = {
           const p = boundaryToward(b, x + rnd(-20, 20), y + rnd(-20, 20)); mkS('crates', p.x, p.y);
         } else if (kind === 'technical') {
           const q = WD.nearestRoad(x, y); if (!q) continue;
-          tg = mkV('enemy', 'technical', 0, 0, { st: 'park', aa: M.diff >= 1 }); placeOnEdge(tg, q, q.t, 3.4);
+          tg = mkV('enemy', 'technical', 0, 0, { st: 'park', aa: M.Df.aa > 0 && R() < ZONES[M.zone].aa }); placeOnEdge(tg, q, q.t, 3.4);
         } else { const q = WD.openSpot(x, y, 30); tg = mkS(kind, q.x, q.y); }
       }
       if (!tg) continue;
@@ -1547,6 +1596,7 @@ function startMission(card, diff, droneId, lo) {
   selW = 0; firing = false; fireCd = 0; orbitMode = false; paused = false; shake = 0; staticT = 0; flashT = 0; confirmAt = 0;
   thermal = card.tod === 'night' && upv('thermal') > 0;
   WIND.x = rnd(-1.6, 1.6); WIND.y = rnd(-1.6, 1.6);
+  M.aaAcc = M.Df.acc * ZONES[M.zone].aaAcc;
   populateCommon();
   MIS[M.type].setup();
   M.total = M.timeLeft;
@@ -1555,6 +1605,8 @@ function startMission(card, diff, droneId, lo) {
   cam.x = f.x; cam.y = f.y; cam.z = cam.zt = 2; cam.slew = null;
   showHUD();
   radio(`מבצע ׳${card.name}׳: ${M.intro}`, '', false);
+  const aaN = ents.filter(e => e.alive && (e.aa || e.role === 'manpads')).length;
+  radio(aaN ? `מודיעין: יש נ״מ באזור (${aaLabel(diff, card.zone)}). שימו לב להתרעות.` : 'אין איום נ״מ על הרחפן במשימה הזו', aaN ? 'warn' : 'good');
   if (M.tod === 'night' && !upv('thermal')) radio('משימת לילה בלי מצלמה תרמית — יהיה קשה לראות', 'warn');
   humStart();
 }
@@ -1610,7 +1662,7 @@ function updEnts(dt) {
   for (const e of ents) if (e.alive && !e.inside && !e.gone && e.side === 'friend') FR.push(e);
   for (const e of ents) {
     if (!e.alive) {
-      if (e.burn > 0) { e.burn -= dt; if (chance(dt * 5)) parts.push({ k: 'smoke', x: e.x + gauss(), y: e.y + gauss(), vx: gauss(), vy: gauss(), r: rnd(1, 2), gr: 1.6, t: 0, life: rnd(4, 8), a: 0.55 }); if (chance(dt * 8)) parts.push({ k: 'fire', x: e.x + gauss() * 1.2, y: e.y + gauss() * 1.2, vx: gauss(), vy: gauss(), r: rnd(0.6, 1.3), t: 0, life: rnd(0.3, 0.7) }); }
+      if (e.burn > 0) { e.burn -= dt; if (chance(dt * 6)) parts.push({ k: 'smoke', c: 'd', hot: 1, x: e.x + gauss(), y: e.y + gauss(), vx: gauss(), vy: gauss(), r: rnd(1, 2), gr: 1.7, t: 0, life: rnd(5, 10), a: 0.6, wind: 1.2 }); if (chance(dt * 8)) parts.push({ k: 'fireball', x: e.x + gauss() * 1.2, y: e.y + gauss() * 1.2, vx: gauss(), vy: gauss(), r: rnd(0.6, 1.3), gr: 0.5, t: 0, life: rnd(0.3, 0.7) }); }
       e.deadT = (e.deadT || 0) + dt; continue;
     }
     if (e.hitT > 0) e.hitT -= dt;
@@ -1688,6 +1740,14 @@ function inView(x, y, f) { const p = w2s(x, y), mx = cv.width * f, my = cv.heigh
 function sprite(stops, size) { const c = mkCanvas(size, size), g = c.getContext('2d'), gr = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2); stops.forEach(([o, col]) => gr.addColorStop(o, col)); g.fillStyle = gr; g.fillRect(0, 0, size, size); return c; }
 const GLOW = sprite([[0, 'rgba(255,255,255,1)'], [0.35, 'rgba(255,255,255,0.55)'], [1, 'rgba(255,255,255,0)']], 64);
 const FIREG = sprite([[0, 'rgba(255,245,210,1)'], [0.3, 'rgba(255,170,60,0.85)'], [0.7, 'rgba(200,60,10,0.35)'], [1, 'rgba(120,20,0,0)']], 64);
+const SMOKE_D = sprite([[0, 'rgba(38,36,33,0.9)'], [0.4, 'rgba(46,44,41,0.55)'], [1, 'rgba(55,52,48,0)']], 64);
+const SMOKE_G = sprite([[0, 'rgba(92,90,86,0.95)'], [0.45, 'rgba(100,98,94,0.55)'], [1, 'rgba(110,108,104,0)']], 64);
+const SMOKE_L = sprite([[0, 'rgba(205,203,198,0.95)'], [0.45, 'rgba(210,208,203,0.5)'], [1, 'rgba(215,213,208,0)']], 64);
+const SMOKE_U = sprite([[0, 'rgba(176,158,126,0.95)'], [0.45, 'rgba(170,153,123,0.55)'], [1, 'rgba(165,150,120,0)']], 64);
+const SMOKE_TH = sprite([[0, 'rgba(150,150,150,0.9)'], [0.45, 'rgba(140,140,140,0.45)'], [1, 'rgba(130,130,130,0)']], 64);
+const FIRE_HOT = sprite([[0, 'rgba(255,255,240,1)'], [0.25, 'rgba(255,236,150,0.95)'], [0.6, 'rgba(255,160,50,0.6)'], [1, 'rgba(220,70,0,0)']], 64);
+const FIRE_COOL = sprite([[0, 'rgba(230,100,25,0.9)'], [0.45, 'rgba(150,45,12,0.55)'], [1, 'rgba(60,20,10,0)']], 64);
+const CRATER = sprite([[0, 'rgba(60,45,30,0.85)'], [0.55, 'rgba(90,72,50,0.5)'], [0.8, 'rgba(140,120,90,0.35)'], [1, 'rgba(150,130,100,0)']], 64);
 const SCORCH = sprite([[0, 'rgba(18,14,10,0.8)'], [0.6, 'rgba(25,20,15,0.45)'], [1, 'rgba(25,20,15,0)']], 64);
 function buildPost() {
   const w = cv.width, h = cv.height;
@@ -1744,7 +1804,7 @@ function drawWorld(sc) {
   for (const d of decals) {
     if (!inV(d.x, d.y, d.r * 1.4)) continue;
     const s = d.r * 1.35;
-    ctx.globalAlpha = th ? 0.55 : 0.85; ctx.drawImage(SCORCH, d.x - s, d.y - s, s * 2, s * 2);
+    ctx.globalAlpha = th ? 0.55 : 0.85; ctx.drawImage(d.crater && !th ? CRATER : SCORCH, d.x - s, d.y - s, s * 2, s * 2);
     if (th) { const heat = clamp(1 - d.t / 45, 0, 1); if (heat > 0.02) { ctx.globalAlpha = heat * 0.55; ctx.drawImage(GLOW, d.x - s * 0.8, d.y - s * 0.8, s * 1.6, s * 1.6); } }
   }
   ctx.globalAlpha = 1;
@@ -1882,25 +1942,42 @@ function drawHeli(hl, th) {
 }
 function drawSmoke(th, inV) {
   for (const p of parts) {
-    if (p.k !== 'smoke' && p.k !== 'trail' && p.k !== 'dust' && p.k !== 'debris') continue;
-    if (!inV(p.x, p.y, (p.r || 1) + 2)) continue;
-    const f = 1 - p.t / p.life;
-    if (p.k === 'debris') { ctx.fillStyle = th ? `rgba(230,230,230,${f})` : `rgba(30,25,20,${f})`; ctx.fillRect(p.x - 0.25, p.y - 0.25, 0.5, 0.5); continue; }
-    const a = (p.a || 0.5) * Math.pow(f, 1.2);
-    if (th) ctx.fillStyle = p.k === 'trail' ? `rgba(150,150,150,${a * 0.6})` : `rgba(42,42,42,${a * 0.65})`;
-    else ctx.fillStyle = p.dust || p.k === 'dust' ? `rgba(168,156,132,${a})` : p.k === 'trail' ? `rgba(200,200,195,${a})` : `rgba(72,70,66,${a})`;
-    circle(p.x, p.y, p.r);
+    if (p.t < 0) continue;
+    if (p.k === 'debris') {
+      if (!inV(p.x, p.y, 4)) continue;
+      const f = 1 - p.t / p.life, z = p.z || 0, sz = p.s * (1 + z * 0.03);
+      ctx.globalAlpha = Math.min(1, f * 2);
+      if (z > 0.3 && !th) { ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(p.x + z * 0.35 - sz / 2, p.y + z * 0.45 - sz / 2, sz, sz); }
+      const heat = th && p.hot ? Math.max(0, 1 - p.t / 1.2) : 0;
+      ctx.fillStyle = th ? `rgb(${80 + 175 * heat | 0},${80 + 175 * heat | 0},${80 + 175 * heat | 0})` : p.dirt ? '#5e5140' : '#2a2724';
+      ctx.fillRect(p.x - sz / 2, p.y - sz / 2, sz, sz * 0.8);
+      continue;
+    }
+    if (p.k !== 'smoke' && p.k !== 'trail' && p.k !== 'dust') continue;
+    if (!inV(p.x, p.y, (p.r || 1) * 1.3 + 2)) continue;
+    const u = p.t / p.life, fin = Math.min(1, p.t / Math.min(0.25, p.life * 0.1)), a = (p.a || 0.5) * fin * Math.pow(1 - u, 1.15);
+    let img;
+    if (th) { img = SMOKE_TH; ctx.globalAlpha = a * (p.hot ? 0.15 + 0.4 * Math.max(0, 1 - p.t / 2.5) : 0.22); }
+    else { img = p.k === 'trail' ? SMOKE_L : (p.c === 'u' || p.dust || p.k === 'dust') ? SMOKE_U : p.c === 'd' ? SMOKE_D : p.c === 'l' ? SMOKE_L : SMOKE_G; ctx.globalAlpha = a; }
+    const sz = p.r * 2.5; ctx.drawImage(img, p.x - sz / 2, p.y - sz / 2, sz, sz);
   }
+  ctx.globalAlpha = 1;
 }
 function drawEmissive(sc, th, dark, inV) {
   for (const p of parts) {
-    if (!inV(p.x, p.y, (p.r || 2) * 2.5)) continue;
-    const f = 1 - p.t / p.life;
+    if (p.t < 0 || !inV(p.x, p.y, (p.r || 2) * 3)) continue;
+    const u = p.t / p.life, f = 1 - u;
     switch (p.k) {
       case 'fire': ctx.globalAlpha = f; { const s = p.r * 2.2; ctx.drawImage(th ? GLOW : FIREG, p.x - s / 2, p.y - s / 2, s, s); } break;
-      case 'flash': ctx.globalAlpha = f * 0.95; { const s = p.r * 2; ctx.drawImage(th ? GLOW : FIREG, p.x - s / 2, p.y - s / 2, s, s); } break;
-      case 'muzzle': case 'spark': ctx.globalAlpha = f; { const s = Math.max(p.r * 2.4, 4 * DPR / sc); ctx.drawImage(th ? GLOW : FIREG, p.x - s / 2, p.y - s / 2, s, s); } break;
-      case 'ring': ctx.globalAlpha = f * 0.6; ctx.strokeStyle = th ? '#fff' : 'rgb(255,240,210)'; ctx.lineWidth = 0.6; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, TAU); ctx.stroke(); break;
+      case 'fireball': { // לבן־צהוב → כתום → אדום כהה
+        const s = p.r * 2.3; let img = th ? GLOW : u < 0.3 ? FIRE_HOT : u < 0.65 ? FIREG : FIRE_COOL;
+        ctx.globalAlpha = th ? Math.min(1, f * 1.4) : Math.min(1, f * 1.8); ctx.drawImage(img, p.x - s / 2, p.y - s / 2, s, s); break;
+      }
+      case 'ember': { const fl = 0.55 + 0.45 * Math.sin(p.t * 23 + p.x) * Math.sin(p.t * 13.7 + p.y); ctx.globalAlpha = Math.min(1, f * 3) * fl; const s = p.r * 2.4; ctx.drawImage(th ? GLOW : FIREG, p.x - s / 2, p.y - s / 2, s, s); break; }
+      case 'flash': ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = Math.pow(f, 1.5) * 0.9; { const s = p.r * 2; ctx.drawImage(th ? GLOW : FIRE_HOT, p.x - s / 2, p.y - s / 2, s, s); ctx.globalAlpha *= 0.35; ctx.drawImage(GLOW, p.x - s * 1.2, p.y - s * 1.2, s * 2.4, s * 2.4); } ctx.globalCompositeOperation = 'source-over'; break;
+      case 'muzzle': ctx.globalAlpha = f; { const s = Math.max(p.r * 2.4, 4 * DPR / sc); ctx.drawImage(th ? GLOW : FIREG, p.x - s / 2, p.y - s / 2, s, s); } break;
+      case 'spark': ctx.globalAlpha = f; ctx.strokeStyle = th ? '#fff' : 'rgb(255,225,150)'; ctx.lineWidth = Math.max(0.15, 0.9 * DPR / sc); ctx.beginPath(); ctx.moveTo(p.x - p.vx * 0.035, p.y - p.vy * 0.035); ctx.lineTo(p.x, p.y); ctx.stroke(); break;
+      case 'ring': case 'shock': ctx.globalAlpha = f * f * (p.a || 0.6); ctx.strokeStyle = th ? '#fff' : 'rgb(255,245,225)'; ctx.lineWidth = Math.max(0.25, p.r * 0.06); ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, TAU); ctx.stroke(); break;
     }
   }
   ctx.globalAlpha = 1;
@@ -2193,7 +2270,7 @@ function missionsHTML() {
   <div class="grid">${S.board.map((c, i) => {
     const T = MTYPES[c.type];
     return `<div class="card click" onclick="UI.brief(${i})"><h3><span class="ic">${T.icon}</span>${T.name}</h3>
-      <div class="tags"><span class="tag">מבצע ׳${esc(c.name)}׳</span><span class="tag">${ZONES[c.zone].sector}</span><span class="tag ${c.tod === 'night' ? 'n' : c.tod === 'dusk' ? 'w' : ''}">${TOD_TXT[c.tod]}</span></div>
+      <div class="tags"><span class="tag">מבצע ׳${esc(c.name)}׳</span><span class="tag">${ZONES[c.zone].sector}</span><span class="tag ${c.tod === 'night' ? 'n' : c.tod === 'dusk' ? 'w' : ''}">${TOD_TXT[c.tod]}</span><span class="tag ${ZONES[c.zone].aa >= 1 ? 'w' : ''}">איום נ״מ: ${ZONES[c.zone].threat}</span></div>
       <p>${T.desc}</p><p class="note">${ZONES[c.zone].name}</p>
       <div class="row"><span class="note">תגמול</span><span class="price">${fmtMoney(T.base)} – ${fmtMoney(T.base * 5)}</span></div></div>`;
   }).join('')}</div>`;
@@ -2278,9 +2355,10 @@ function renderBrief(keep) {
     <div class="tags" style="margin:6px 0 10px"><span class="tag">${ZONES[card.zone].sector} · ${ZONES[card.zone].name}</span><span class="tag ${night ? 'n' : ''}">${TOD_TXT[card.tod]}</span></div>
     <p class="note" style="font-size:14px;color:#c4d2c8">${T.desc}</p>
     <div class="sec">רמת קושי</div><div class="diffs">${diffs}</div>
-    <div class="stat"><div><span>תגמול:</span> <b class="price">${fmtMoney(T.base * Df.mult)}</b> + בונוסים</div><div><span>כוח אויב:</span> ${Df.force}</div><div><span>נ״מ:</span> ${AA_TXT[Df.aa]}</div><div><span>זמן:</span> ${diff <= 1 ? 'נדיב' : diff <= 2 ? 'רגיל' : 'לחוץ'}</div></div>
+    <div class="stat"><div><span>תגמול:</span> <b class="price">${fmtMoney(T.base * Df.mult)}</b> + בונוסים</div><div><span>כוח אויב:</span> ${Df.force}</div><div><span>נ״מ:</span> ${aaLabel(diff, card.zone)}</div><div><span>זמן:</span> ${diff <= 1 ? 'נדיב' : diff <= 2 ? 'רגיל' : 'לחוץ'}</div></div>
     ${night && !upv('thermal') ? '<p class="note" style="color:var(--warn)">משימת לילה — בלי מצלמה תרמית כמעט לא רואים.</p>' : ''}
-    ${Df.aa >= 2 ? '<p class="note" style="color:var(--warn)">יש טילי כתף באזור — כשמופיעה התרעה, לוחצים על ״נוריות״.</p>' : ''}
+    ${Df.aa * ZONES[card.zone].aa >= 1.5 ? '<p class="note" style="color:var(--warn)">ייתכנו טילי כתף באזור — כשמופיעה התרעה, לוחצים על ״נוריות״.</p>' : ''}
+    <p class="note">רמת הנ״מ תלויה בגזרה: בדרום לאויב כמעט אין אמצעים, בצפון הרבה, ובמזרח בינוני.</p>
     <div class="sec">רחפן</div><div class="dlist">${drones}</div>
     <div class="sec">חימוש — תחנות ${used}/${D.slots}</div>${rows}
     ${missing.length ? `<p class="note">לא נתמך ב״${D.name}״: ${missing.join(', ')}</p>` : ''}
