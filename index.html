@@ -723,6 +723,9 @@ function mkP(side, role, x, y, o) {
   const e = Object.assign({ id: EID++, k: 'p', side, role, x, y, ang: rnd(TAU), hp: 100, mhp: 100, r: 0.9, alive: true, inside: null, inT: 0, st: 'idle', t: rnd(2), cd: rnd(1, 3), spd: rnd(1.1, 1.5),
     tx: x, ty: y, hx: x, hy: y, marked: false, armed: side === 'enemy' || side === 'friend',
     col: side === 'civ' ? pick(CIV_COLS) : side === 'friend' ? '#56683f' : side === 'hostage' ? '#d2c9b6' : pick(['#2c2e25', '#38392e', '#26282a', '#3b352b']) }, o || {});
+  // סוג הנשק שהדמות מחזיקה
+  e.gun = side === 'friend' ? 'm4' : role === 'rpg' ? 'rpg' : role === 'manpads' ? 'manpads' : role === 'contact' ? (chance(0.6) ? 'pistol' : 'ak')
+    : role === 'guard' ? (chance(0.25) ? 'pistol' : 'ak') : role === 'rifle' ? (chance(0.1) ? 'pistol' : 'ak') : 'ak';
   ents.push(e); return e;
 }
 function mkV(side, role, x, y, o) {
@@ -739,8 +742,9 @@ function mkS(role, x, y, o) {
   ents.push(e); return e;
 }
 function label(e) {
-  if (e.role === 'contact') return e.armed ? 'איש קשר חמוש' : 'איש קשר (לא חמוש)';
+  if (e.role === 'contact') return e.armed ? (e.gun === 'pistol' ? 'איש קשר עם אקדח' : 'איש קשר חמוש') : 'איש קשר (לא חמוש)';
   if (e.k === 'p' && e.side === 'enemy' && !e.armed) return 'חשוד לא חמוש';
+  if (e.k === 'p' && e.side === 'enemy' && e.gun === 'pistol' && e.role !== 'contact') return 'חמוש באקדח';
   return { civ: 'אזרח', rifle: 'חמוש', guard: 'חמוש', rpg: 'נושא RPG', manpads: 'טיל כתף!', soldier: 'כוחותינו', hostage: 'חטוף', car: 'רכב אזרחי', technical: 'טנדר חמוש', truck: 'משאית',
     target: 'רכב המטרה', hvt: 'מפקד בכיר', launcher: 'משגר רקטות', tel: 'משגר טילים בליסטיים', uav: 'אתר שיגור כטב״מים', hmg: 'מקלע נ״מ', cache: 'מצבור נשק', shaft: 'פיר מנהרה', crates: 'ארגזי תחמושת' }[e.role] || '?';
 }
@@ -918,7 +922,7 @@ function updCiv(e, dt) {
     case 'toroad': if (walkTo(e, e.tx, e.ty, e.spd, dt)) e.st = 'walk'; break;
   }
 }
-const erange = e => e.role === 'rpg' ? 95 : (e.role === 'rifle' || e.role === 'guard') ? 78 : 0;
+const erange = e => e.role === 'rpg' ? 95 : (e.role === 'rifle' || e.role === 'guard') ? (e.gun === 'pistol' ? 45 : 78) : 0;
 function updEnemy(e, dt) {
   if (updFear(e, dt)) return;
   if (e.role === 'manpads') tryManpads(e, dt);
@@ -2057,7 +2061,9 @@ function drawFigure(e, th, sc) {
   ctx.beginPath(); ctx.ellipse(0, 0, 0.34 * k, 0.72 * k, 0, 0, TAU); ctx.fill();
   if (e.side === 'friend' || (e.armed && e.side === 'enemy' && e.role !== 'contact')) { ctx.fillStyle = th ? '#bdbdbd' : e.side === 'friend' ? '#3f4a30' : 'rgba(0,0,0,0.28)'; ctx.fillRect(-0.24 * k, -0.4 * k, 0.48 * k, 0.8 * k); } // אפוד
   ctx.fillStyle = th ? '#fff' : e.skin; // ידיים
-  if (e.armed) { ctx.beginPath(); ctx.arc(0.42, -0.42, 0.13, 0, TAU); ctx.arc(0.62, 0.12, 0.13, 0, TAU); ctx.fill(); }
+  if (e.armed && e.gun === 'pistol') { ctx.beginPath(); ctx.arc(0.68, 0.18, 0.13, 0, TAU); ctx.arc(-stride * 0.7, -0.68 * k, 0.13, 0, TAU); ctx.fill(); }
+  else if (e.armed && (e.gun === 'rpg' || e.gun === 'manpads')) { ctx.beginPath(); ctx.arc(0.45, -0.38, 0.13, 0, TAU); ctx.arc(0.05, -0.62, 0.13, 0, TAU); ctx.fill(); }
+  else if (e.armed) { ctx.beginPath(); ctx.arc(0.42, -0.42, 0.13, 0, TAU); ctx.arc(0.62, 0.12, 0.13, 0, TAU); ctx.fill(); }
   else if (st === 'panic' || st === 'cower') { ctx.beginPath(); ctx.arc(0.1, -0.48, 0.13, 0, TAU); ctx.arc(0.1, 0.48, 0.13, 0, TAU); ctx.fill(); } // ידיים על הראש
   else { ctx.beginPath(); ctx.arc(-stride * 0.7, -0.68 * k, 0.13, 0, TAU); ctx.arc(stride * 0.7, 0.68 * k, 0.13, 0, TAU); ctx.fill(); }
   ctx.fillStyle = th ? '#fff' : e.skin; ctx.beginPath(); ctx.arc(0.05, 0, 0.3, 0, TAU); ctx.fill(); // ראש
@@ -2065,11 +2071,32 @@ function drawFigure(e, th, sc) {
   if (e.side === 'friend') { ctx.beginPath(); ctx.arc(0.04, 0, 0.33, 0, TAU); ctx.fill(); } // קסדה
   ctx.restore();
 }
-function drawGunLocal(e, th) {
-  const big = e.role === 'rpg' || e.role === 'manpads';
-  ctx.strokeStyle = th ? '#3c3c3c' : '#141414'; ctx.lineCap = 'butt';
-  if (big) { ctx.lineWidth = 0.42; ctx.beginPath(); ctx.moveTo(-1.1, -0.45); ctx.lineTo(1.4, -0.45); ctx.stroke(); }
-  else { ctx.lineWidth = 0.22; ctx.beginPath(); ctx.moveTo(-0.3, -0.35); ctx.lineTo(1.55, 0.05); ctx.stroke(); ctx.lineWidth = 0.32; ctx.beginPath(); ctx.moveTo(0.25, -0.22); ctx.lineTo(0.55, -0.15); ctx.stroke(); }
+function drawGunLocal(e, th) { // מבט מלמעלה; ‎+x = כיוון הפנים
+  const g = e.gun || 'ak', blk = th ? '#3a3a3a' : '#151515', line = (w, c, x0, y0, x1, y1) => { ctx.lineWidth = w; ctx.strokeStyle = c; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); };
+  ctx.lineCap = 'butt';
+  if (g === 'ak') { // קלאצ׳ניקוב: קת ומגן ידיים מעץ, גוף מתכת, קנה
+    const wood = th ? '#4a4a4a' : '#7a4f2a';
+    line(0.2, wood, -0.45, -0.42, -0.05, -0.33);   // קת
+    line(0.17, blk, -0.05, -0.33, 0.5, -0.21);     // גוף
+    line(0.17, wood, 0.5, -0.21, 0.95, -0.11);     // מגן ידיים
+    line(0.07, blk, 0.95, -0.11, 1.55, 0.02);      // קנה
+    line(0.1, blk, 1.47, 0, 1.6, 0.03);            // מדכא להבה
+  } else if (g === 'm4') { // רובה של כוחותינו: שחור עם כוונת
+    line(0.18, blk, -0.4, -0.4, 1.0, -0.1); line(0.08, blk, 1.0, -0.1, 1.5, 0); line(0.12, th ? '#555' : '#2a2a2a', 0.2, -0.27, 0.55, -0.2);
+  } else if (g === 'pistol') { // אקדח ביד מושטת
+    line(0.13, blk, 0.62, 0.18, 1.02, 0.18);
+  } else if (g === 'rpg') { // צינור על הכתף ורש קרב בחזית
+    const tube = th ? '#5a5a5a' : '#4a5236';
+    line(0.26, tube, -0.95, -0.45, 1.05, -0.45);
+    ctx.fillStyle = th ? '#777' : '#3b3f2c'; ctx.beginPath(); ctx.moveTo(1.0, -0.62); ctx.lineTo(1.45, -0.62); ctx.lineTo(1.75, -0.45); ctx.lineTo(1.45, -0.28); ctx.lineTo(1.0, -0.28); ctx.closePath(); ctx.fill();
+    line(0.12, blk, 0.2, -0.45, 0.25, -0.25); // ידית
+  } else if (g === 'manpads') { // טיל כתף נגד מטוסים: צינור ארוך, יחידת שיגור וכוונת
+    const tube = th ? '#5a5a5a' : '#5d6a3e';
+    line(0.3, tube, -1.2, -0.45, 1.35, -0.45);
+    line(0.34, th ? '#777' : '#333', 1.3, -0.45, 1.45, -0.45);
+    ctx.fillStyle = th ? '#666' : '#2b2b2b'; ctx.fillRect(0.0, -0.75, 0.35, 0.22); // כוונת/אנטנה
+    line(0.12, blk, 0.25, -0.45, 0.3, -0.22);
+  }
   ctx.lineCap = 'round';
 }
 function drawGun(e, col) {
