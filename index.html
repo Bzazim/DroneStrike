@@ -172,7 +172,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
    DroneStrike — משחק מפעיל רחפנים. קובץ יחיד, בלי ספריות ובלי build.
    ===================================================================== */
 const GAME_NAME = 'DroneStrike';
-const SAVE_KEY = 'dsSave', SET_KEY = 'dsSettings', SAVE_VERSION = 1;
+const SAVE_KEY = 'dsSave', SET_KEY = 'dsSettings', SAVE_VERSION = 2;
 const WORLD = 1500;          // גודל המפה ביחידות (בערך מטרים)
 const VIEW_UNITS = 640;      // כמה יחידות רואים בצד הקצר של המסך בזום x1
 
@@ -201,17 +201,17 @@ function mkCanvas(w, h) { const c = document.createElement('canvas'); c.width = 
 /* ---------- נתוני משחק ---------- */
 // light = מכפיל נזק נגד רכבים ומבנים קלים, bdmg = מכפיל נזק נגד בניינים ומטרות מבוצרות
 const WEAPONS = {
-  grenade: { name: 'רימון מונחה', short: 'רימון', cls: 1, radius: 6, dmg: 170, light: 0.8, bdmg: 0.3, flight: 2.4, spread: 1.3, cd: 0.8, perSlot: 6, price: 0, pack: 0, free: true,
+  grenade: { name: 'רימון מונחה', short: 'רימון', cls: 1, radius: 6, dmg: 170, light: 0.8, bdmg: 0.3, flight: 2.4, spread: 1.3, cd: 0.8, perSlot: 10, price: 0, pack: 0, free: true,
     desc: 'נופל אנכית מהרחפן והורג מטווח של כמה מטרים. חינם וללא הגבלה במלאי.' },
-  gun: { name: 'מקלע 7.62', short: 'מקלע', cls: 2, radius: 1.5, dmg: 42, light: 0.15, bdmg: 0.03, flight: 0.5, spread: 1.5, cd: 0.11, perSlot: 150, price: 90, pack: 150, auto: true,
+  gun: { name: 'מקלע 7.62', short: 'מקלע', cls: 2, radius: 1.5, dmg: 42, light: 0.15, bdmg: 0.03, flight: 0.5, spread: 1.5, cd: 0.11, perSlot: 250, price: 90, pack: 150, auto: true,
     desc: 'אש רציפה נגד חמושים, כמעט בלי נזק סביבתי. מצוין ליד חטופים וכוחות.' },
-  missile: { name: 'טיל נ״ט מונחה', short: 'טיל', cls: 2, radius: 6.5, dmg: 260, light: 1, bdmg: 0.8, flight: 2.2, spread: 0.8, cd: 1.4, perSlot: 2, price: 260, pack: 2, laser: true,
+  missile: { name: 'טיל נ״ט מונחה', short: 'טיל', cls: 2, radius: 6.5, dmg: 260, light: 1, bdmg: 0.8, flight: 2.2, spread: 0.8, cd: 1.4, perSlot: 4, price: 260, pack: 2, laser: true,
     desc: 'טיל מדויק נגד רכבים ומשגרים. עם מסמן לייזר הוא ננעל על מטרה בתנועה.' },
-  loiter: { name: 'תחמושת משוטטת', short: 'משוטטת', cls: 1, radius: 4, dmg: 240, light: 1, bdmg: 0.5, flight: 3.4, spread: 0.3, cd: 1.6, perSlot: 2, price: 420, pack: 2, track: true,
+  loiter: { name: 'תחמושת משוטטת', short: 'משוטטת', cls: 1, radius: 4, dmg: 240, light: 1, bdmg: 0.5, flight: 3.4, spread: 0.3, cd: 1.6, perSlot: 3, price: 420, pack: 2, track: true,
     desc: 'רחפן מתאבד עם מחפש משלו: ננעל על המטרה שבכוונת ורודף אחריה. מדויקת מאוד.' },
-  bomb: { name: 'פצצה מונחית', short: 'פצצה', cls: 3, radius: 17, dmg: 450, light: 1.2, bdmg: 1.6, flight: 4.5, spread: 1.6, cd: 2.5, perSlot: 1, price: 380, pack: 1,
+  bomb: { name: 'פצצה מונחית', short: 'פצצה', cls: 3, radius: 17, dmg: 450, light: 1.2, bdmg: 1.6, flight: 4.5, spread: 1.6, cd: 2.5, perSlot: 2, price: 380, pack: 1,
     desc: 'הרס רחב: מפילה מבנים. מסוכנת לאזרחים ולכוחות שקרובים למטרה.' },
-  bunker: { name: 'פצצה חודרת', short: 'חודרת', cls: 3, radius: 9, dmg: 320, light: 1, bdmg: 4, flight: 4.8, spread: 1.2, cd: 2.5, perSlot: 1, price: 520, pack: 1,
+  bunker: { name: 'פצצה חודרת', short: 'חודרת', cls: 3, radius: 9, dmg: 320, light: 1, bdmg: 4, flight: 4.8, spread: 1.2, cd: 2.5, perSlot: 2, price: 520, pack: 1,
     desc: 'חודרת לעומק והורסת פירי מנהרות ומחסנים, עם רדיוס פגיעה קטן יחסית.' },
 };
 const WORDER = ['grenade', 'gun', 'missile', 'loiter', 'bomb', 'bunker'];
@@ -260,7 +260,7 @@ const DIFFS = [
 ];
 function aaLabel(diff, zone) { const v = DIFFS[diff].aa * ZONES[zone].aa; return !v ? 'אין' : v < 0.7 ? 'נמוך' : v < 1.5 ? 'בינוני' : v < 2.5 ? 'גבוה' : 'גבוה מאוד'; }
 const TOD_TXT = { day: 'יום', dusk: 'דמדומים', night: 'לילה' };
-const TNAME = { launcher: 'משגר רקטות', technical: 'טנדר חמוש', cache: 'מצבור נשק', depot: 'מחסן אמצעי לחימה', shaft: 'פיר מנהרה' };
+const TNAME = { tel: 'משגר טילים בליסטיים', uav: 'אתר שיגור כטב״מים', factory: 'מפעל טילים', launcher: 'משגר רקטות', technical: 'טנדר חמוש', cache: 'מצבור נשק', depot: 'מחסן אמצעי לחימה', shaft: 'פיר מנהרה' };
 const OPNAMES = ['ברק שקט', 'צל ארוך', 'אבן חדה', 'שחר אדום', 'קשת ירוקה', 'רוח צפונית', 'זאב בודד', 'חול נודד', 'כוכב נופל', 'שועל לילה', 'סלע איתן', 'מים עמוקים', 'להב כחול', 'עין חדה', 'נץ אפור', 'אש קרה', 'גשר אור', 'שער ברזל', 'חוט השני', 'ענן נמוך', 'גל שקט', 'יד ארוכה', 'קו אדום', 'מגדל לבן', 'אלון', 'ברוש', 'רימון', 'תאנה', 'צבר', 'דקל'];
 const RANKS = [[0, 'מפעיל מתלמד'], [3, 'מפעיל'], [8, 'מפעיל בכיר'], [15, 'מפקד צוות'], [25, 'מפקד גף'], [40, 'מפקד טייסת']];
 
@@ -268,10 +268,16 @@ const RANKS = [[0, 'מפעיל מתלמד'], [3, 'מפעיל'], [8, 'מפעיל 
 let S = null;
 function newSave() {
   return { v: SAVE_VERSION, money: 1500, drones: { wasp: 1 }, ammo: { gun: 0, missile: 0, loiter: 2, bomb: 0, bunker: 0 }, air: 0, up: {},
-    stats: { done: 0, failed: 0, earned: 0, kills: 0, civ: 0 }, board: null, lastDiff: {}, lastDrone: 'wasp' };
+    stats: { done: 0, failed: 0, earned: 0, kills: 0, civ: 0 }, boards: {}, camp: { gaza: 0, lebanon: 0, yemen: 0, iran: 0 }, region: 'gaza', lastDiff: {}, lastDrone: 'wasp' };
 }
 function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { } }
-function loadSave() { try { const d = JSON.parse(localStorage.getItem(SAVE_KEY)); if (d && d.v === SAVE_VERSION) return d; } catch (e) { } return null; }
+function loadSave() {
+  try {
+    const d = JSON.parse(localStorage.getItem(SAVE_KEY)); if (!d) return null;
+    if (d.v === 1) { d.v = 2; delete d.board; d.boards = {}; d.camp = { gaza: 0, lebanon: 0, yemen: 0, iran: 0 }; d.region = 'gaza'; } // שדרוג שמירה ישנה
+    if (d.v === SAVE_VERSION) return d;
+  } catch (e) { } return null;
+}
 function upv(id) { const u = UPGRADES.find(x => x.id === id); return u.levels[Math.min((S && S.up[id]) || 0, u.levels.length - 1)].v; }
 function rankOf(done) { let r = RANKS[0][1]; for (const [n, t] of RANKS) if (done >= n) r = t; return r; }
 function maxOwnedCls() { return Math.max(...Object.keys(S.drones).map(k => DRONES[k].cls)); }
@@ -346,12 +352,24 @@ function say(text) {
    עולם: יצירת מפה פרוצדורלית (כבישים, בניינים, מטעים, שדות, תבליט)
    ===================================================================== */
 const ZONES = {
-  urban: { name: 'מרחב עירוני צפוף', sector: 'גזרה דרומית', aa: 0.3, aaAcc: 0.6, threat: 'נמוך', sp: 86, jit: 8, rem: 0.07, cores: 1, coreR: [560, 720], base: 0.14, ground: [156, 148, 130], hill: 0.15, civ: 70, cars: 14 },
-  village: { name: 'כפרים ומטעים', sector: 'גזרה צפונית', aa: 1, aaAcc: 1, threat: 'גבוה', sp: 128, jit: 22, rem: 0.22, cores: 3, coreR: [200, 270], base: 0.03, ground: [132, 131, 104], hill: 1, civ: 42, cars: 9 },
-  open: { name: 'שטח פתוח ומתחמים', sector: 'גזרה מזרחית', aa: 0.6, aaAcc: 0.8, threat: 'בינוני', sp: 185, jit: 30, rem: 0.33, cores: 2, coreR: [160, 210], base: 0, ground: [170, 154, 122], hill: 0.8, civ: 24, cars: 6 },
+  gaza: { name: 'עזה', desc: 'צפוף, בניינים נמוכים והרבה הריסות', style: 'urban', aa: 0.3, aaAcc: 0.6, threat: 'נמוך', sp: 82, jit: 7, rem: 0.06, cores: 1, coreR: [600, 740], base: 0.18, ground: [178, 168, 146], hill: 0.12, civ: 70, cars: 10, floors: [1, 3], ruin: 0.24, craters: 45, bcol: ['#c6c0b2', '#b1ab9e', '#d2ccbe', '#9f9a8e', '#9aa1a4'], tree: '#55613f' },
+  lebanon: { name: 'לבנון', desc: 'כפרים בין גבעות וסבך צמחייה', style: 'village', aa: 1, aaAcc: 1, threat: 'גבוה', sp: 128, jit: 24, rem: 0.24, cores: 3, coreR: [180, 240], base: 0.02, ground: [112, 120, 86], hill: 1.4, civ: 36, cars: 7, floors: [1, 3], ruin: 0.03, craters: 8, forest: 0.55, bcol: ['#d2c9b6', '#c2b8a2', '#9c5a4a', '#dad2c0', '#9aa1a4'], tree: '#3c4c2c' },
+  yemen: { name: 'תימן', desc: 'עיירות בוץ עתיקות, הרים וואדיות', style: 'town', aa: 0.5, aaAcc: 0.75, threat: 'בינוני', sp: 150, jit: 26, rem: 0.28, cores: 2, coreR: [200, 260], base: 0, ground: [170, 140, 102], hill: 1.6, civ: 36, cars: 6, floors: [2, 5], ruin: 0.06, craters: 14, bcol: ['#a98b66', '#9a7c5a', '#b99b75', '#8d7255', '#9aa1a4'], tree: '#5c6440' },
+  iran: { name: 'איראן', desc: 'מדבר, מפעלים ובסיסי טילים', style: 'open', aa: 0.65, aaAcc: 0.85, threat: 'בינוני', sp: 200, jit: 18, rem: 0.3, cores: 2, coreR: [170, 220], base: 0, ground: [186, 174, 150], hill: 0.6, civ: 22, cars: 8, floors: [1, 2], ruin: 0, craters: 0, industry: 0.4, bcol: ['#c4b9a2', '#b3a88f', '#d0c6b0', '#a59a82', '#9ba3a8'], tree: '#646a48' },
 };
+const ZORDER = ['gaza', 'lebanon', 'yemen', 'iran'];
+const REGION_TYPES = { gaza: ['strike', 'cas', 'rescue', 'recon'], lebanon: ['strike', 'cas', 'recon', 'rescue'], yemen: ['strike', 'recon', 'cas'], iran: ['strike', 'recon', 'strike'] };
+const REGION_KINDS = { gaza: ['launcher', 'launcher', 'cache', 'technical', 'shaft', 'shaft', 'depot'], lebanon: ['launcher', 'launcher', 'cache', 'technical', 'depot', 'shaft'], yemen: ['launcher', 'uav', 'uav', 'tel', 'technical', 'cache'], iran: ['tel', 'tel', 'tel', 'factory', 'factory', 'uav'] };
+const CAMPAIGN = {
+  gaza: { stages: [{ type: 'strike', diff: 0, name: 'מנהרות הגבול' }, { type: 'cas', diff: 1, name: 'כניסה לשכונה' }, { type: 'recon', diff: 1, name: 'מעקב אחרי מפקד' }, { type: 'rescue', diff: 2, name: 'הבית עם הדלת הכחולה' }, { type: 'strike', diff: 3, name: 'מפקדת החטיבה' }] },
+  lebanon: { need: ['gaza', 3], stages: [{ type: 'strike', diff: 1, name: 'משגרים בסבך' }, { type: 'recon', diff: 1, name: 'שיירת הנשק' }, { type: 'cas', diff: 2, name: 'הרכס' }, { type: 'strike', diff: 3, name: 'מחסני הכפר' }, { type: 'rescue', diff: 3, name: 'חילוץ מהכפר' }] },
+  yemen: { need: ['lebanon', 3], stages: [{ type: 'strike', diff: 1, name: 'אתר הכטב״מים' }, { type: 'recon', diff: 2, name: 'המשאית מהנמל' }, { type: 'strike', diff: 2, name: 'משגרי הטילים' }, { type: 'cas', diff: 3, name: 'נחיתה בוואדי' }, { type: 'strike', diff: 3, name: 'הר המשגרים' }] },
+  iran: { need: ['yemen', 3], stages: [{ type: 'recon', diff: 2, name: 'בעקבות המשגר' }, { type: 'strike', diff: 2, name: 'בסיס הטילים' }, { type: 'strike', diff: 3, name: 'מפעל הדלק המוצק' }, { type: 'strike', diff: 4, name: 'מערך השיגור' }, { type: 'strike', diff: 4, name: 'המכה האחרונה' }] },
+};
+const CAMP_MULT = 1.5, CAMP_BONUS = 4000;
+const regionOpen = r => { const n = CAMPAIGN[r].need; return !n || (S && S.camp[n[0]] >= n[1]); };
 const TILE = 250, TN = Math.ceil(WORLD / TILE);
-const DAY_B = ['#b8b2a3', '#a39e91', '#c7c1b2', '#918d82'], TH_B = ['#5c5c5c', '#666666', '#545454', '#717171'];
+const TH_B = ['#5c5c5c', '#666666', '#545454', '#717171', '#6b6b6b'];
 let WD = null;
 
 function vnoise(n) {
@@ -376,7 +394,7 @@ function genWorld(seed, zk) {
     while (t < 40 && cores.some(o => dist(o.x, o.y, c.x, c.y) < (o.r + c.r) * 0.7));
     cores.push(c);
   }
-  if (zk === 'urban') { cores[0].x = rnd(W * .42, W * .58); cores[0].y = rnd(W * .42, W * .58); }
+  if (Z.style === 'urban') { cores[0].x = rnd(W * .42, W * .58); cores[0].y = rnd(W * .42, W * .58); }
   const dens = (x, y) => { let d = Z.base; for (const c of cores) { const k = 1 - dist(x, y, c.x, c.y) / c.r; if (k > 0) d = Math.max(d, Z.base + (1 - Z.base) * Math.min(1, k * 1.7)); } return d; };
 
   /* ----- רשת כבישים ----- */
@@ -388,11 +406,11 @@ function genWorld(seed, zk) {
     nodes.push({ x, y, adj: [], inMap: x > 12 && y > 12 && x < W - 12 && y < W - 12, comp: false });
   }
   const nid = (i, j) => j * N + i;
-  const edges = [], me = zk === 'urban' ? 3 : 2, mo = rint(0, me - 1);
+  const edges = [], me = Z.style === 'urban' ? 3 : 2, mo = rint(0, me - 1);
   function addE(a, b, main) {
     const A = nodes[a], B = nodes[b], d = dens((A.x + B.x) / 2, (A.y + B.y) / 2);
     if (!main && R() < Z.rem * (1.7 - d)) return;
-    edges.push({ a, b, main, dirt: !main && zk !== 'urban' && d < 0.3, len: dist(A.x, A.y, B.x, B.y) });
+    edges.push({ a, b, main, dirt: !main && Z.style !== 'urban' && d < 0.3, len: dist(A.x, A.y, B.x, B.y) });
   }
   for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
     if (i < N - 1) addE(nid(i, j), nid(i + 1, j), j % me === mo);
@@ -407,7 +425,7 @@ function genWorld(seed, zk) {
   }
 
   /* ----- בלוקים ובניינים ----- */
-  const B = [], trees = [], fields = [], walls = [], RH = 6.8;
+  const B = [], trees = [], fields = [], walls = [], forests = [], tanks = [], factories = [], RH = 6.8;
   function addB(x, y, w, h, f) {
     if (w < 5 || h < 5) return null;
     const b = { id: B.length, x, y, w, h, f, s: rint(0, 3), hp: 0, mhp: 0, ruined: false, det: [] };
@@ -425,7 +443,7 @@ function genWorld(seed, zk) {
       else { const s = h * rnd(0.35, 0.65); split(x, y, w, s, dep + 1); split(x, y + s, w, h - s, dep + 1); }
     })(x0, y0, x1 - x0, y1 - y0, 0);
     for (const [x, y, w, h] of lots) {
-      if (R() < 0.5 + 0.45 * de) { const g = rnd(0.8, 2.2); addB(x + g, y + g, w - 2 * g, h - 2 * g, 1 + Math.floor(de * rnd(0.5, 5.5))); }
+      if (R() < 0.5 + 0.45 * de) { const g = rnd(0.8, 2.2); addB(x + g, y + g, w - 2 * g, h - 2 * g, clamp(1 + Math.floor(de * rnd(0.5, 5.5)), Z.floors[0], Z.floors[1])); }
       else if (chance(0.35)) trees.push({ x: x + w / 2 + rnd(-2, 2), y: y + h / 2 + rnd(-2, 2), r: rnd(2.5, 4) });
     }
   }
@@ -437,16 +455,35 @@ function genWorld(seed, zk) {
     }
   }
   function villageBlock(x0, y0, x1, y1, de) {
-    const area = (x1 - x0) * (y1 - y0), cnt = Math.round(area / 700 * (0.4 + de)), local = [];
+    const town = Z.style === 'town', gap = town ? 2.5 : 5, area = (x1 - x0) * (y1 - y0), cnt = Math.round(area / (town ? 260 : 700) * (0.4 + de)), local = [];
     for (let k = 0; k < cnt; k++) for (let t = 0; t < 12; t++) {
       const w = rnd(8, 16), h = rnd(8, 15), x = rnd(x0, x1 - w), y = rnd(y0, y1 - h);
       if (x < x0 || y < y0 || x + w > x1 || y + h > y1) continue;
-      if (local.some(o => x < o.x + o.w + 5 && x + w + 5 > o.x && y < o.y + o.h + 5 && y + h + 5 > o.y)) continue;
-      const b = addB(x, y, w, h, rint(1, 3)); if (b) local.push(b);
-      for (let q = rint(0, 3); q > 0; q--) trees.push({ x: x + rnd(-4, w + 4), y: y + rnd(-4, h + 4), r: rnd(2.2, 3.6) });
+      if (local.some(o => x < o.x + o.w + gap && x + w + gap > o.x && y < o.y + o.h + gap && y + h + gap > o.y)) continue;
+      const b = addB(x, y, w, h, rint(Z.floors[0], Z.floors[1])); if (b) local.push(b);
+      if (!town) for (let q = rint(0, 3); q > 0; q--) trees.push({ x: x + rnd(-4, w + 4), y: y + rnd(-4, h + 4), r: rnd(2.2, 3.6) });
       break;
     }
-    if (chance(0.4)) orchard(x0, y0, x1, y1, local);
+    if (!town && chance(0.4)) orchard(x0, y0, x1, y1, local);
+  }
+  function forest(x0, y0, x1, y1) { // סבך: שטיח צמחייה כהה על הקרקע + עצים צפופים מעליו
+    forests.push({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
+    for (let y = y0 + 3; y < y1 - 2; y += rnd(7.5, 9.5)) for (let x = x0 + 3; x < x1 - 2; x += rnd(7.5, 9.5)) if (chance(0.85)) trees.push({ x: x + rnd(-2.5, 2.5), y: y + rnd(-2.5, 2.5), r: rnd(3.4, 5.2) });
+  }
+  function factory(x0, y0, x1, y1) { // מתחם תעשייה: חומה, אולמות גדולים ומכלים
+    const w = Math.min(x1 - x0 - 4, rnd(80, 130)), h = Math.min(y1 - y0 - 4, rnd(60, 100)); if (w < 50 || h < 40) return compound(x0, y0, x1, y1);
+    const x = rnd(x0 + 2, x1 - w - 2), y = rnd(y0 + 2, y1 - h - 2); walls.push({ x, y, w, h }); factories.push({ x: x + w / 2, y: y + h / 2 });
+    const local = [];
+    for (let k = rint(1, 3); k > 0; k--) for (let t = 0; t < 14; t++) {
+      const bw = rnd(24, Math.min(60, w - 10)), bh = rnd(14, Math.min(34, h - 10)), bx = rnd(x + 3, x + w - bw - 3), by = rnd(y + 3, y + h - bh - 3);
+      if (local.some(o => bx < o.x + o.w + 5 && bx + bw + 5 > o.x && by < o.y + o.h + 5 && by + bh + 5 > o.y)) continue;
+      const b = addB(bx, by, bw, bh, rint(1, 2)); if (b) { b.ind = true; b.s = 4; b.det = b.det.filter(d => d[2] === 1); local.push(b); } break;
+    }
+    for (let k = rint(2, 6); k > 0; k--) for (let t = 0; t < 10; t++) {
+      const r = rnd(3, 6), tx = rnd(x + r + 2, x + w - r - 2), ty = rnd(y + r + 2, y + h - r - 2);
+      if (local.some(o => tx > o.x - r - 2 && tx < o.x + o.w + r + 2 && ty > o.y - r - 2 && ty < o.y + o.h + r + 2) || tanks.some(o => dist(o.x, o.y, tx, ty) < o.r + r + 2)) continue;
+      tanks.push({ x: tx, y: ty, r }); break;
+    }
   }
   function fieldRect(x0, y0, x1, y1) { const m = rnd(2, 6); return { x: x0 + m, y: y0 + m, w: x1 - x0 - 2 * m, h: y1 - y0 - 2 * m, k: rint(0, 3), dir: chance(0.5) }; }
   function scrub(x0, y0, x1, y1, k) { const c = Math.round((x1 - x0) * (y1 - y0) / 2500 * k); for (let i = 0; i < c; i++) trees.push({ x: rnd(x0, x1), y: rnd(y0, y1), r: rnd(0.9, 1.8) }); }
@@ -462,8 +499,9 @@ function genWorld(seed, zk) {
   }
   function ruralBlock(x0, y0, x1, y1) {
     const r = R();
-    if (zk === 'village') { if (r < 0.45) orchard(x0, y0, x1, y1, null); else if (r < 0.85) fields.push(fieldRect(x0, y0, x1, y1)); else scrub(x0, y0, x1, y1, 8); }
-    else if (zk === 'open') { if (r < 0.16) compound(x0, y0, x1, y1); else if (r < 0.36) fields.push(fieldRect(x0, y0, x1, y1)); else scrub(x0, y0, x1, y1, 4); }
+    if (Z.style === 'village') { if (r < Z.forest) forest(x0, y0, x1, y1); else if (r < Z.forest + 0.2) orchard(x0, y0, x1, y1, null); else if (r < Z.forest + 0.35) fields.push(fieldRect(x0, y0, x1, y1)); else scrub(x0, y0, x1, y1, 12); }
+    else if (Z.style === 'town') { if (r < 0.35) fields.push(fieldRect(x0, y0, x1, y1)); else if (r < 0.5) compound(x0, y0, x1, y1); else scrub(x0, y0, x1, y1, 3); }
+    else if (Z.style === 'open') { if (r < Z.industry) factory(x0, y0, x1, y1); else if (r < Z.industry + 0.12) compound(x0, y0, x1, y1); else if (r < Z.industry + 0.25) fields.push(fieldRect(x0, y0, x1, y1)); else scrub(x0, y0, x1, y1, 3); }
     else { if (r < 0.5) fields.push(fieldRect(x0, y0, x1, y1)); else if (r < 0.75) orchard(x0, y0, x1, y1, null); else scrub(x0, y0, x1, y1, 6); if (chance(0.25)) compound(x0, y0, x1, y1); }
   }
   for (let j = 0; j < N - 1; j++) for (let i = 0; i < N - 1; i++) {
@@ -475,6 +513,10 @@ function genWorld(seed, zk) {
     if (de > 0.5) urbanBlock(x0, y0, x1, y1, de); else if (de > 0.16) villageBlock(x0, y0, x1, y1, de); else ruralBlock(x0, y0, x1, y1);
   }
 
+  for (const b of B) if (chance(Z.ruin)) { // הריסות מסבבים קודמים
+    b.ruined = true; b.hp = 0; b.rub = [];
+    for (let i = Math.round(6 + b.w * b.h / 40); i > 0; i--) { const w = rnd(1, 3.5), h = rnd(1, 3); b.rub.push([b.x + rnd(-1.5, b.w - w + 1.5), b.y + rnd(-1.5, b.h - h + 1.5), w, h]); }
+  }
   /* ----- אינדקסים מרחביים ----- */
   const GC = 40, GN = Math.ceil(W / GC) + 1, bgrid = Array.from({ length: GN * GN }, () => []);
   for (const b of B) {
@@ -505,6 +547,7 @@ function genWorld(seed, zk) {
     return best;
   };
   // ניקוי עצים שנפלו על בניינים או כבישים
+  const T3 = tanks.filter(t => !bAt(t.x, t.y, t.r));
   const T2 = trees.filter(t => t.x > 2 && t.y > 2 && t.x < W - 2 && t.y < W - 2 && !bAt(t.x, t.y, t.r * 0.4) && roadDist(t.x, t.y) > 5 + t.r * 0.4);
 
   /* ----- קרקע: תבליט, צבע ותרמי (מצויר פעם אחת לקנבס) ----- */
@@ -521,10 +564,10 @@ function genWorld(seed, zk) {
     const u = (x + .5) / GS, v = (y + .5) / GS, fine = n96(u, v), veg = nveg(u, v);
     const k = (0.86 + 0.24 * (h - 0.5) + 0.09 * (fine - 0.5)) * (1 + sh);
     let r = br * k, g = bg * k, b = bb * k;
-    if (zk === 'village' && veg > 0.5) { const t = Math.min(1, (veg - 0.5) * 2.2) * 0.55; r = lerp(r, 96 * k, t); g = lerp(g, 112 * k, t); b = lerp(b, 70 * k, t); }
-    if (zk === 'open' && h < 0.4) { const t = (0.4 - h) * 2; r *= 1 - t * 0.25; g *= 1 - t * 0.2; b *= 1 - t * 0.15; }
+    if (Z.style === 'village' && veg > 0.45) { const t = Math.min(1, (veg - 0.45) * 2.2) * 0.6; r = lerp(r, 96 * k, t); g = lerp(g, 112 * k, t); b = lerp(b, 70 * k, t); }
+    if ((Z.style === 'open' || Z.style === 'town') && h < 0.4) { const t = (0.4 - h) * 2; r *= 1 - t * 0.25; g *= 1 - t * 0.2; b *= 1 - t * 0.15; }
     dI.data[i * 4] = r; dI.data[i * 4 + 1] = g; dI.data[i * 4 + 2] = b; dI.data[i * 4 + 3] = 255;
-    const tv = 62 + 28 * (h - 0.5) + 10 * (fine - 0.5) + 40 * sh + (zk === 'urban' ? 6 : 0);
+    const tv = 62 + 28 * (h - 0.5) + 10 * (fine - 0.5) + 40 * sh + (Z.style === 'urban' ? 6 : 0);
     tI.data[i * 4] = tI.data[i * 4 + 1] = tI.data[i * 4 + 2] = tv; tI.data[i * 4 + 3] = 255;
   }
   gd.putImageData(dI, 0, 0); gt.putImageData(tI, 0, 0);
@@ -537,12 +580,24 @@ function genWorld(seed, zk) {
     else for (let y = f.y; y < f.y + f.h; y += 5) gd.fillRect(f.x * s, y * s, f.w * s, 0.7);
   }
 
+  for (const f of forests) { // שטיח הסבך
+    for (let i = 0; i < f.w * f.h / 60; i++) { const x = f.x + R() * f.w, y = f.y + R() * f.h, r = rnd(4, 9) * s;
+      gd.fillStyle = `rgba(${rint(48, 64)},${rint(64, 80)},${rint(36, 46)},0.55)`; gd.beginPath(); gd.arc(x * s, y * s, r, 0, TAU); gd.fill();
+      gt.fillStyle = 'rgba(30,30,30,0.5)'; gt.beginPath(); gt.arc(x * s, y * s, r, 0, TAU); gt.fill(); }
+  }
+  for (let i = 0; i < Z.craters; i++) { // מכתשים
+    let x, y, t = 0; do { x = rnd(60, W - 60); y = rnd(60, W - 60); t++; } while (t < 20 && dens(x, y) < 0.3);
+    const r = rnd(3, 9) * s; gd.fillStyle = 'rgba(205,195,170,0.5)'; gd.beginPath(); gd.arc(x * s, y * s, r * 1.5, 0, TAU); gd.fill();
+    gd.fillStyle = 'rgba(70,58,44,0.75)'; gd.beginPath(); gd.arc(x * s, y * s, r, 0, TAU); gd.fill();
+    gt.fillStyle = 'rgba(25,25,25,0.6)'; gt.beginPath(); gt.arc(x * s, y * s, r, 0, TAU); gt.fill();
+  }
   /* ----- נתיבי ציור ----- */
   const pMain = new Path2D(), pSmall = new Path2D(), pDirt = new Path2D(), pWalls = new Path2D();
   for (const e of edges) { const A = nodes[e.a], Bn = nodes[e.b], p = e.main ? pMain : e.dirt ? pDirt : pSmall; p.moveTo(A.x, A.y); p.lineTo(Bn.x, Bn.y); }
   for (const w of walls) pWalls.rect(w.x, w.y, w.w, w.h);
   const tiles = [];
-  for (let k = 0; k < TN * TN; k++) tiles.push({ x: (k % TN) * TILE, y: Math.floor(k / TN) * TILE, b: [], t: [] });
+  for (let k = 0; k < TN * TN; k++) tiles.push({ x: (k % TN) * TILE, y: Math.floor(k / TN) * TILE, b: [], t: [], tk: [] });
+  T3.forEach(t => tiles[tileOf(t.x, t.y)].tk.push(t));
   B.forEach(b => { b.tile = tileOf(b.x + b.w / 2, b.y + b.h / 2); tiles[b.tile].b.push(b); });
   T2.forEach(t => tiles[tileOf(t.x, t.y)].t.push(t));
   tiles.forEach(T => { buildTileB(T); buildTileT(T); });
@@ -552,7 +607,8 @@ function genWorld(seed, zk) {
   mc.drawImage(gDay, 0, 0, 240, 240);
   mc.save(); mc.scale(240 / W, 240 / W); mc.lineCap = 'round';
   mc.strokeStyle = '#8c8574'; mc.lineWidth = 6; mc.stroke(pDirt); mc.strokeStyle = '#55534e'; mc.lineWidth = 7; mc.stroke(pSmall); mc.lineWidth = 10; mc.stroke(pMain);
-  mc.fillStyle = '#ddd6c6'; for (const b of B) mc.fillRect(b.x, b.y, b.w, b.h);
+  mc.fillStyle = '#ddd6c6'; for (const b of B) if (!b.ruined) mc.fillRect(b.x, b.y, b.w, b.h);
+  mc.fillStyle = '#d8dad8'; for (const t of T3) { mc.beginPath(); mc.arc(t.x, t.y, t.r, 0, TAU); mc.fill(); }
   mc.restore(); mc.fillStyle = 'rgba(0,10,5,0.3)'; mc.fillRect(0, 0, 240, 240);
 
   /* ----- שאילתות על המפה ----- */
@@ -596,7 +652,7 @@ function genWorld(seed, zk) {
     return freeSpot(x, y, r);
   };
   const freeSpot = (x, y, r) => {
-    for (let t = 0; t < 50; t++) { const px = clamp(x + rnd(-r, r), 30, W - 30), py = clamp(y + rnd(-r, r), 30, W - 30); if (!bAt(px, py, 1.5)) return { x: px, y: py }; }
+    for (let t = 0; t < 80; t++) { const rr = r + t * 1.2, px = clamp(x + rnd(-rr, rr), 30, W - 30), py = clamp(y + rnd(-rr, rr), 30, W - 30); if (!bAt(px, py, 1.5)) return { x: px, y: py }; }
     return { x: clamp(x, 30, W - 30), y: clamp(y, 30, W - 30) };
   };
   const findArea = (dmin, dmax, margin = 300) => {
@@ -605,7 +661,7 @@ function genWorld(seed, zk) {
   };
 
   const out = {
-    zk, Z, nodes, edges, B, trees: T2, fields, walls, dens, gDay, gTh, mini, pMain, pSmall, pDirt, pWalls, tiles,
+    zk, Z, nodes, edges, B, trees: T2, tanks: T3, bcol: Z.bcol, factories, fields, walls, dens, gDay, gTh, mini, pMain, pSmall, pDirt, pWalls, tiles,
     baseDay: `rgb(${Z.ground.map(v => Math.round(v * 0.86)).join(',')})`,
     bAt, bNear, roadDist, randNode, nodeNear, randEdge, route, nearestRoad, openSpot, freeSpot, findArea, inside,
   };
@@ -614,7 +670,7 @@ function genWorld(seed, zk) {
 }
 
 function buildTileB(T) {
-  T.pb = [new Path2D(), new Path2D(), new Path2D(), new Path2D()]; T.pall = new Path2D(); T.psh = new Path2D();
+  T.pb = [new Path2D(), new Path2D(), new Path2D(), new Path2D(), new Path2D()]; T.pall = new Path2D(); T.psh = new Path2D();
   T.ptank = new Path2D(); T.psol = new Path2D(); T.prubB = new Path2D(); T.prub = new Path2D(); T.hasRub = false;
   for (const b of T.b) {
     if (b.ruined) {
@@ -628,7 +684,8 @@ function buildTileB(T) {
   }
 }
 function buildTileT(T) {
-  T.pt = new Path2D(); T.ptsh = new Path2D(); T.pthi = new Path2D();
+  T.pt = new Path2D(); T.ptsh = new Path2D(); T.pthi = new Path2D(); T.ptk = new Path2D(); T.ptksh = new Path2D();
+  for (const t of T.tk) { T.ptk.moveTo(t.x + t.r, t.y); T.ptk.arc(t.x, t.y, t.r, 0, TAU); T.ptksh.moveTo(t.x + t.r + 1.5, t.y + 1.8); T.ptksh.arc(t.x + 1.5, t.y + 1.8, t.r, 0, TAU); }
   for (const t of T.t) {
     T.pt.moveTo(t.x + t.r, t.y); T.pt.arc(t.x, t.y, t.r, 0, TAU);
     T.ptsh.moveTo(t.x + t.r + 0.9, t.y + 1.1); T.ptsh.arc(t.x + 0.9, t.y + 1.1, t.r, 0, TAU);
@@ -677,7 +734,7 @@ function mkV(side, role, x, y, o) {
   ents.push(e); return e;
 }
 function mkS(role, x, y, o) {
-  const def = { launcher: { hp: 180, r: 2.6 }, hmg: { hp: 110, r: 2.2, aa: true }, cache: { hp: 120, r: 2.4 }, shaft: { hp: 460, r: 2.2, hard: true }, crates: { hp: 60, r: 1.6 } }[role];
+  const def = { launcher: { hp: 180, r: 2.6 }, hmg: { hp: 110, r: 2.2, aa: true }, cache: { hp: 120, r: 2.4 }, shaft: { hp: 460, r: 2.2, hard: true }, crates: { hp: 60, r: 1.6 }, tel: { hp: 220, r: 4.5 }, uav: { hp: 120, r: 3 } }[role];
   const e = Object.assign({ id: EID++, k: 's', side: 'enemy', role, x, y, ang: rnd(TAU), hp: def.hp, mhp: def.hp, r: def.r, hard: !!def.hard, aa: !!def.aa, alive: true, cd: rnd(2, 5), marked: false }, o || {});
   ents.push(e); return e;
 }
@@ -685,7 +742,7 @@ function label(e) {
   if (e.role === 'contact') return e.armed ? 'איש קשר חמוש' : 'איש קשר (לא חמוש)';
   if (e.k === 'p' && e.side === 'enemy' && !e.armed) return 'חשוד לא חמוש';
   return { civ: 'אזרח', rifle: 'חמוש', guard: 'חמוש', rpg: 'נושא RPG', manpads: 'טיל כתף!', soldier: 'כוחותינו', hostage: 'חטוף', car: 'רכב אזרחי', technical: 'טנדר חמוש', truck: 'משאית',
-    target: 'רכב המטרה', hvt: 'מפקד בכיר', launcher: 'משגר רקטות', hmg: 'מקלע נ״מ', cache: 'מצבור נשק', shaft: 'פיר מנהרה', crates: 'ארגזי תחמושת' }[e.role] || '?';
+    target: 'רכב המטרה', hvt: 'מפקד בכיר', launcher: 'משגר רקטות', tel: 'משגר טילים בליסטיים', uav: 'אתר שיגור כטב״מים', hmg: 'מקלע נ״מ', cache: 'מצבור נשק', shaft: 'פיר מנהרה', crates: 'ארגזי תחמושת' }[e.role] || '?';
 }
 
 /* ---------- תנועה על כבישים ---------- */
@@ -719,6 +776,54 @@ function moveTo(e, tx, ty, spd, dt) {
   const dx = tx - e.x, dy = ty - e.y, d = Math.hypot(dx, dy); if (d < 0.25) return true;
   const s = Math.min(d, spd * dt); e.x += dx / d * s; e.y += dy / d * s; e.ang = angLerp(e.ang, Math.atan2(dy, dx), dt * 10); e.moving = true;
   return d <= spd * dt;
+}
+/* מסלול הליכה שלא עובר דרך בניינים: קו ישר אם פנוי, אחרת דרך רשת הכבישים */
+function lineClear(x0, y0, x1, y1) { const n = Math.ceil(dist(x0, y0, x1, y1) / 0.8); for (let i = 1; i < n; i++) { const t = i / n; if (WD.bAt(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, 0.5)) return false; } return true; }
+function planPath(x0, y0, x1, y1) {
+  const pre = [], sb = WD.bAt(x0, y0, 0), db = WD.bAt(x1, y1, 0);
+  if (db) { const q = boundaryToward(db, x0, y0); x1 = q.x; y1 = q.y; }        // יעד בתוך מבנה — עוצרים בקיר
+  if (sb) { const q = boundaryToward(sb, x1, y1); pre.push(q); x0 = q.x; y0 = q.y; } // תקוע בתוך מבנה — יוצאים קודם
+  return pre.concat(planPath2(x0, y0, x1, y1));
+}
+function gridPath(x0, y0, x1, y1) { // חיפוש מקומי על רשת של 2 מטר, מסביב לפינות
+  const G = 2, m = 24, gx0 = Math.min(x0, x1) - m, gy0 = Math.min(y0, y1) - m, W = Math.ceil((Math.abs(x1 - x0) + 2 * m) / G), H = Math.ceil((Math.abs(y1 - y0) + 2 * m) / G);
+  if (W * H > 9000) return null;
+  const id = (x, y) => y * W + x, cx = x => clamp(Math.round((x - gx0) / G), 0, W - 1), cy = y => clamp(Math.round((y - gy0) / G), 0, H - 1);
+  const s0 = id(cx(x0), cy(y0)), t0 = id(cx(x1), cy(y1)), prev = new Int32Array(W * H).fill(-2), q = [s0]; prev[s0] = -1;
+  for (let h = 0; h < q.length; h++) {
+    const u = q[h]; if (u === t0) break; const ux = u % W, uy = (u / W) | 0;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+      const nx = ux + dx, ny = uy + dy; if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue; const v = id(nx, ny); if (prev[v] !== -2) continue;
+      if (WD.bAt(gx0 + nx * G, gy0 + ny * G, 0.7) && v !== t0) { prev[v] = -3; continue; }
+      prev[v] = u; q.push(v);
+    }
+  }
+  if (prev[t0] < -1) return null;
+  const pts = []; for (let v = t0; v !== s0 && v >= 0; v = prev[v]) pts.push({ x: gx0 + (v % W) * G, y: gy0 + ((v / W) | 0) * G });
+  pts.reverse(); pts.push({ x: x1, y: y1 });
+  const out = []; let px = x0, py = y0, i = 0;
+  while (i < pts.length) { let j = pts.length - 1; while (j > i && !lineClear(px, py, pts[j].x, pts[j].y)) j--; out.push(pts[j]); px = pts[j].x; py = pts[j].y; i = j + 1; }
+  return out;
+}
+function planPath2(x0, y0, x1, y1) {
+  if (lineClear(x0, y0, x1, y1)) return [{ x: x1, y: y1 }];
+  if (dist(x0, y0, x1, y1) < 90) { const g = gridPath(x0, y0, x1, y1); if (g) return g; }
+  const a = WD.nearestRoad(x0, y0), b = WD.nearestRoad(x1, y1); if (!a || !b) return [{ x: x1, y: y1 }];
+  const N = WD.nodes, near = (r, ox, oy) => dist(N[r.na].x, N[r.na].y, ox, oy) < dist(N[r.nb].x, N[r.nb].y, ox, oy) ? r.na : r.nb;
+  const s0 = near(a, x1, y1), t0 = near(b, x0, y0), rt = s0 === t0 ? [s0] : (WD.route(s0, t0) || [s0, t0]);
+  const pts = lineClear(x0, y0, a.x, a.y) ? [{ x: a.x, y: a.y }] : (gridPath(x0, y0, a.x, a.y) || [{ x: a.x, y: a.y }]);
+  for (const k of rt) pts.push({ x: N[k].x + rnd(-2, 2), y: N[k].y + rnd(-2, 2) });
+  pts.push({ x: b.x, y: b.y });
+  if (lineClear(b.x, b.y, x1, y1)) pts.push({ x: x1, y: y1 }); else pts.push(...(gridPath(b.x, b.y, x1, y1) || [{ x: x1, y: y1 }]));
+  const out = []; let cx = x0, cy = y0, i = 0; // קיצורי דרך כשרואים נקודה רחוקה יותר
+  while (i < pts.length) { let j = pts.length - 1; while (j > i && !lineClear(cx, cy, pts[j].x, pts[j].y)) j--; out.push(pts[j]); cx = pts[j].x; cy = pts[j].y; i = j + 1; }
+  return out;
+}
+function walkTo(e, tx, ty, spd, dt, loose) { // loose: יעד שזז (רודפים) — מתכננים מחדש רק כשהוא זז הרבה
+  if (!e.path || (loose ? Math.hypot(tx - e.ptx, ty - e.pty) > 12 : (tx !== e.ptx || ty !== e.pty))) { e.path = planPath(e.x, e.y, tx, ty); e.ptx = tx; e.pty = ty; }
+  const last = e.path.length <= 1, p = e.path[0] || { x: tx, y: ty };
+  if (moveTo(e, p.x, p.y, spd, dt)) { if (last) { e.path = null; return true; } e.path.shift(); }
+  return false;
 }
 function boundaryToward(b, x, y) {
   const cx = clamp(x, b.x, b.x + b.w), cy = clamp(y, b.y, b.y + b.h);
@@ -755,7 +860,7 @@ function panic(e, x, y) {
   if (e.inside || e.side === 'friend' || e.side === 'hostage') return;
   if (e.side === 'civ') {
     if (e.st === 'go' && e.run) return;
-    if (!goInside(e, 40, rnd(20, 45), true)) { const a = Math.atan2(e.y - y, e.x - x); e.tx = e.x + Math.cos(a) * 30; e.ty = e.y + Math.sin(a) * 30; e.tb = null; e.st = 'go'; e.run = true; }
+    if (!goInside(e, 40, rnd(20, 45), true)) { const a = Math.atan2(e.y - y, e.x - x), q = WD.freeSpot(e.x + Math.cos(a) * 30, e.y + Math.sin(a) * 30, 6); e.tx = q.x; e.ty = q.y; e.tb = null; e.st = 'go'; e.run = true; e.path = null; }
   } else if (e.side === 'enemy' && e.k === 'p') {
     if (e.st === 'go' || e.st === 'contact' || e.role === 'hostage') return;
     if (chance(0.55)) goInside(e, 35, rnd(8, 18), true);
@@ -772,8 +877,8 @@ function updCiv(e, dt) {
       else if (chance(dt * 0.008)) goInside(e, 25, rnd(12, 40));
       break;
     case 'stand': e.t -= dt; if (e.t < 0) { e.t = rnd(2, 6); e.ang += rnd(-1.5, 1.5); } break;
-    case 'go': if (moveTo(e, e.tx, e.ty, e.run ? 3.6 : e.spd, dt)) { if (e.tb && !e.tb.ruined) enter(e, e.tb, e.inDur || rnd(15, 40)); else { e.st = 'stand'; e.t = rnd(4, 9); } } break;
-    case 'toroad': if (moveTo(e, e.tx, e.ty, e.spd, dt)) e.st = 'walk'; break;
+    case 'go': if (walkTo(e, e.tx, e.ty, e.run ? 3.6 : e.spd, dt)) { if (e.tb && !e.tb.ruined) enter(e, e.tb, e.inDur || rnd(15, 40)); else { e.st = 'stand'; e.t = rnd(4, 9); } } break;
+    case 'toroad': if (walkTo(e, e.tx, e.ty, e.spd, dt)) e.st = 'walk'; break;
   }
 }
 const erange = e => e.role === 'rpg' ? 95 : (e.role === 'rifle' || e.role === 'guard') ? 78 : 0;
@@ -791,7 +896,7 @@ function updEnemy(e, dt) {
       e.t -= dt;
       if (e.t < 0) { e.t = rnd(2, 6); if (e.patrol) { e.pi = !e.pi; const p = e.pi ? e.patrol : { x: e.hx, y: e.hy }; e.tx = p.x; e.ty = p.y; e.st = 'move'; } else e.ang += rnd(-1.2, 1.2); }
       break;
-    case 'move': if (moveTo(e, e.tx, e.ty, e.run ? 3.3 : 1.4, dt)) { e.st = 'post'; e.run = false; } break;
+    case 'move': if (walkTo(e, e.tx, e.ty, e.run ? 3.3 : 1.4, dt)) { e.st = 'post'; e.run = false; } break;
     case 'fight': {
       const t = e.tgt;
       if (!t || !t.alive || t.inside || dist(e.x, e.y, t.x, t.y) > R0 * 1.25) { e.st = 'post'; e.tgt = null; break; }
@@ -799,11 +904,11 @@ function updEnemy(e, dt) {
       e.cd -= dt; if (e.cd <= 0) { enemyShoot(e, t); e.cd = e.role === 'rpg' ? rnd(6, 9) : rnd(0.8, 1.6); }
       break;
     }
-    case 'go': if (moveTo(e, e.tx, e.ty, 3.4, dt)) { if (e.tb && !e.tb.ruined) enter(e, e.tb, e.inDur || rnd(8, 18)); else e.st = 'post'; } break;
+    case 'go': if (walkTo(e, e.tx, e.ty, 3.4, dt)) { if (e.tb && !e.tb.ruined) enter(e, e.tb, e.inDur || rnd(8, 18)); else e.st = 'post'; } break;
     case 'hunt': {
       const L = e.huntSq && squadLead(e.huntSq);
       if (!L) { e.st = 'post'; break; }
-      if (dist(e.x, e.y, L.x, L.y) > Math.max(40, R0 * 0.8)) moveTo(e, L.x, L.y, 2.8, dt); else { e.st = 'post'; e.hx = e.x; e.hy = e.y; }
+      if (dist(e.x, e.y, L.x, L.y) > Math.max(40, R0 * 0.8)) walkTo(e, L.x, L.y, 2.8, dt, true); else { e.st = 'post'; e.hx = e.x; e.hy = e.y; }
       break;
     }
     case 'contact': updContact(e, dt); break;
@@ -823,15 +928,15 @@ function enemyShoot(e, t) {
   if (onScreen(e.x, e.y, 0)) SFX.far();
 }
 function updContact(e, dt) {
-  if (e.cst === 0) { if (moveTo(e, e.tx, e.ty, 1.4, dt)) e.cst = 1; }
+  if (e.cst === 0) { if (walkTo(e, e.tx, e.ty, 1.4, dt)) e.cst = 1; }
   else if (e.cst === 1) {
     if (e.car && e.car.alive) e.ang = angLerp(e.ang, Math.atan2(e.car.y - e.y, e.car.x - e.x), dt * 5);
     if (!e.car || !e.car.alive || e.car.st === 'drive') {
       e.cst = 2;
-      if (e.home && !e.home.ruined) { const p = boundaryToward(e.home, e.x, e.y); e.tx = p.x; e.ty = p.y; } else { e.tx = e.x + rnd(-40, 40); e.ty = e.y + rnd(-40, 40); }
+      if (e.home && !e.home.ruined) { const p = boundaryToward(e.home, e.x, e.y); e.tx = p.x; e.ty = p.y; } else { const q = WD.freeSpot(e.x + rnd(-40, 40), e.y + rnd(-40, 40), 6); e.tx = q.x; e.ty = q.y; }
     }
   } else if (e.cst === 2) {
-    if (moveTo(e, e.tx, e.ty, 1.4, dt)) { if (e.home && !e.home.ruined) { enter(e, e.home, 1e9); e.stay = true; } else e.cst = 3; }
+    if (walkTo(e, e.tx, e.ty, 1.4, dt)) { if (e.home && !e.home.ruined) { enter(e, e.home, 1e9); e.stay = true; } else e.cst = 3; }
   }
 }
 
@@ -1040,7 +1145,8 @@ function kill(e, src) {
   e.alive = false; e.hp = 0; e.deadT = 0; e.killedBy = src; e.moving = false;
   if (e.k !== 'p') {
     e.burn = rnd(15, 30); fxExplosion(e.x, e.y, e.k === 'v' ? 6 : 5, true, e.k === 'v' ? 'vehicle' : 'sec');
-    if (e.role === 'cache' || e.role === 'launcher' || e.role === 'crates') for (let i = rint(2, 4); i > 0; i--) later(rnd(0.3, 2.2), () => explode(e.x + gauss() * 6, e.y + gauss() * 6, 4, 50, { src: 'sec', bdmg: 0.3, fx: 'sec' }));
+    if (e.role === 'tel') later(0.4, () => explode(e.x, e.y, 12, 200, { src: 'sec', bdmg: 0.6, fx: 'bomb' }));
+    if (e.role === 'cache' || e.role === 'launcher' || e.role === 'crates' || e.role === 'uav') for (let i = rint(2, 4); i > 0; i--) later(rnd(0.3, 2.2), () => explode(e.x + gauss() * 6, e.y + gauss() * 6, 4, 50, { src: 'sec', bdmg: 0.3, fx: 'sec' }));
   }
   if (!M) return;
   if (src === 'player') {
@@ -1197,6 +1303,14 @@ function fire(auto) {
   if (lock && !W.auto) SFX.lock();
   updWeapRow();
 }
+function ammoLeft() { return loadout.reduce((a, s) => a + s.n, 0) + S.air; }
+function checkAmmo(dt) {
+  const left = ammoLeft();
+  if (left > 0 && left <= 3 && !M.flags.lowAmmo) { M.flags.lowAmmo = true; radio('התחמושת כמעט נגמרה!', 'warn', true); }
+  const s = curW(); if (s && s.n <= 0) { const j = loadout.findIndex(q => q.n > 0); if (j >= 0) { selW = j; updWeapRow(); } }
+  if (left === 0 && !shots.length) { M.noAmmoT = (M.noAmmoT || 0) + dt; if (M.noAmmoT > 4) endMission(false, 'נגמרה התחמושת לפני שהושלמו היעדים'); }
+  else M.noAmmoT = 0;
+}
 function callAir() {
   if (!M || M.over || drone.down) return;
   if (S.air <= 0) { radio('אין תקיפות מטוס במלאי — אפשר לקנות בחנות', 'warn'); return; }
@@ -1265,7 +1379,7 @@ function populateCommon() {
   for (let i = 0; i < civN / 6; i++) {
     const b = pick(WD.B); if (!b) continue;
     const q = boundaryToward(b, b.x + b.w / 2 + rnd(-30, 30), b.y + b.h / 2 + rnd(-30, 30));
-    for (let k = rint(1, 3); k > 0; k--) mkP('civ', 'civ', q.x + rnd(-2, 2), q.y + rnd(-2, 2), { st: 'stand', t: rnd(1, 5) });
+    for (let k = rint(1, 3); k > 0; k--) { let x = q.x + rnd(-2, 2), y = q.y + rnd(-2, 2); if (WD.bAt(x, y, 0.8)) { const f = WD.freeSpot(x, y, 3); x = f.x; y = f.y; } mkP('civ', 'civ', x, y, { st: 'stand', t: rnd(1, 5) }); }
   }
   const carN = Math.round(Z.cars * (night ? 0.5 : 1));
   for (let i = 0; i < carN; i++) { const ed = WD.randEdge(0); if (!ed) break; const v = mkV('civ', 'car', 0, 0, { st: 'drive' }); placeOnEdge(v, ed, rnd(), 2.6); }
@@ -1286,19 +1400,20 @@ const MIS = {};
 /* ----- תקיפה ----- */
 MIS.strike = {
   setup() {
-    const c = WD.findArea(0.3, 0.95, 320); M.area = c; M.focus = c;
-    const cls = drone.D.cls, kinds = ['launcher', 'launcher', 'technical', 'cache'];
-    if (cls >= 2) kinds.push('depot', 'depot'); if (cls >= 3) kinds.push('shaft');
+    let c = WD.findArea(0.3, 0.95, 320);
+    if (WD.factories.length) { const f = WD.factories.filter(f => WD.inside(f.x, f.y, 280)); if (f.length) c = pick(f); }
+    M.area = c; M.focus = c;
+    const cls = drone.D.cls, kinds = REGION_KINDS[M.zone].filter(k => cls >= 2 || !['depot', 'factory', 'shaft'].includes(k));
     const n = 2 + (M.diff >= 2 ? 1 : 0) + (M.diff >= 4 ? 1 : 0), pts = []; M.targets = [];
     for (let i = 0; i < n; i++) {
       const kind = pick(kinds); let tg = null;
       for (let tr = 0; tr < 60 && !tg; tr++) {
         const a = rnd(TAU), r = rnd(30, 250), x = c.x + Math.cos(a) * r, y = c.y + Math.sin(a) * r;
         if (!WD.inside(x, y, 90) || pts.some(q => dist(q.x, q.y, x, y) < 110)) continue;
-        if (kind === 'depot') {
-          const b = WD.bNear(x, y, 35).find(b => !b.ruined && !b.tgt && b.w * b.h > 140); if (!b) continue;
-          b.tgt = true; b.mhp = b.hp = Math.round(330 + M.diff * 30);
-          tg = { k: 'b', b, role: 'depot', x: b.x + b.w / 2, y: b.y + b.h / 2, alive: true };
+        if (kind === 'depot' || kind === 'factory') {
+          const fac = kind === 'factory', b = WD.bNear(x, y, fac ? 90 : 35).find(b => !b.ruined && !b.tgt && (fac ? b.ind || b.w * b.h > 500 : b.w * b.h > 140)); if (!b) continue;
+          b.tgt = true; b.tgtName = TNAME[kind]; b.mhp = b.hp = Math.round((fac ? 520 : 330) + M.diff * 30);
+          tg = { k: 'b', b, role: kind, x: b.x + b.w / 2, y: b.y + b.h / 2, alive: true };
           const p = boundaryToward(b, x + rnd(-20, 20), y + rnd(-20, 20)); mkS('crates', p.x, p.y);
         } else if (kind === 'technical') {
           const q = WD.nearestRoad(x, y); if (!q) continue;
@@ -1311,9 +1426,9 @@ MIS.strike = {
       tg.intel = { x: tg.x + Math.cos(a) * o, y: tg.y + Math.sin(a) * o, r: ir };
       M.targets.push(tg);
       const g = Math.round((rint(1, 2) + M.diff * 0.6) * M.Df.en);
-      for (let k = 0; k < g; k++) { const q = WD.freeSpot(tg.x + rnd(-16, 16), tg.y + rnd(-16, 16), 6); const e = mkP('enemy', chance(0.2) && M.diff >= 1 ? 'rpg' : 'rifle', q.x, q.y, { st: 'post' }); if (chance(0.4)) e.patrol = { x: q.x + rnd(-14, 14), y: q.y + rnd(-14, 14) }; }
+      for (let k = 0; k < g; k++) { const q = WD.freeSpot(tg.x + rnd(-16, 16), tg.y + rnd(-16, 16), 6); const e = mkP('enemy', chance(0.2) && M.diff >= 1 ? 'rpg' : 'rifle', q.x, q.y, { st: 'post' }); if (chance(0.4)) e.patrol = WD.freeSpot(q.x + rnd(-14, 14), q.y + rnd(-14, 14), 4); }
     }
-    for (let k = Math.round(3 * M.Df.en); k > 0; k--) { const q = WD.freeSpot(c.x + rnd(-220, 220), c.y + rnd(-220, 220), 20); mkP('enemy', 'rifle', q.x, q.y, { st: 'post', patrol: { x: q.x + rnd(-25, 25), y: q.y + rnd(-25, 25) } }); }
+    for (let k = Math.round(3 * M.Df.en); k > 0; k--) { const q = WD.freeSpot(c.x + rnd(-220, 220), c.y + rnd(-220, 220), 20); mkP('enemy', 'rifle', q.x, q.y, { st: 'post', patrol: WD.freeSpot(q.x + rnd(-25, 25), q.y + rnd(-25, 25), 6) }); }
     placeAA(c.x, c.y, 230);
     M.timeLeft = (150 + M.targets.length * 45) * M.Df.time * upv('battery');
     M.objs = M.targets.map((t, i) => ({ id: 't' + i, text: `${TNAME[t.role]} — יעד ${i + 1}` }));
@@ -1338,7 +1453,7 @@ MIS.strike = {
     let left = 0;
     M.targets.forEach((t, i) => {
       if (!t.revealed && (t.k === 'b' ? !t.b.ruined : t.alive) && zoomEff() >= 2 && inView(t.x, t.y, 0.08)) {
-        t.revealed = true; if (t.k === 'b') t.b.label = 'מחסן אמצעי לחימה';
+        t.revealed = true; if (t.k === 'b') t.b.label = TNAME[t.role];
         radio(`זוהה יעד ${i + 1}: ${TNAME[t.role]} — השמידו אותו!`, 'good'); SFX.lock();
       }
       const dead = t.k === 'b' ? t.b.ruined : !t.alive, o = M.objs.find(o => o.id === 't' + i);
@@ -1356,7 +1471,7 @@ MIS.strike = {
     if (e.side === 'enemy' && e.k === 'p' && src === 'player') { M.milK++; setObj('mil', { text: `בונוס: חיסול חמושים (${M.milK}/${M.milN})`, done: M.milK >= M.milN }); }
     if (e.hvt && !M.over) { setObj('hvt', { done: true }); M.bonus.push({ text: 'חיסול מפקד בכיר', f: 0.35 }); radio('המפקד חוסל!', 'good', true); if (M.endAt) M.endAt = Math.min(M.endAt, M.t + 1.5); }
   },
-  onMarkB(b) { return b.tgt ? 'מחסן אמצעי לחימה' : null; },
+  onMarkB(b) { return b.tgt ? b.tgtName : null; },
 };
 
 /* ----- סיוע לכוחות ----- */
@@ -1416,7 +1531,7 @@ MIS.rescue = {
     const want = 3 + (M.diff >= 2 ? 1 : 0) + (M.diff >= 4 ? 1 : 0);
     for (let t = 0; t < 8 && cands.length < 3; t++) {
       cands = [];
-      const all = shuffle(WD.bNear(c.x, c.y, 220).filter(b => b.w * b.h >= 110 && WD.inside(b.x, b.y, 80)));
+      const all = shuffle(WD.bNear(c.x, c.y, 220).filter(b => !b.ruined && b.w * b.h >= 110 && WD.inside(b.x, b.y, 80)));
       for (const b of all) { if (cands.every(o => dist(o.x, o.y, b.x, b.y) > 50)) cands.push(b); if (cands.length >= want) break; }
       if (cands.length < 3) c = WD.findArea(0.2, 1, 320);
     }
@@ -1429,7 +1544,7 @@ MIS.rescue = {
     for (let i = 0; i < 2; i++) { const e = mkP('enemy', 'guard', H.x + H.w / 2, H.y + H.h / 2, { stay: true, inGuard: true }); enter(e, H, 1e9); }
     const g = Math.round((2 + M.diff) * Math.min(1.4, M.Df.en));
     const ring = a => { const p = boundaryToward(H, H.x + H.w / 2 + Math.cos(a) * 80, H.y + H.h / 2 + Math.sin(a) * 80); return { x: p.x + Math.cos(a) * rnd(2, 9), y: p.y + Math.sin(a) * rnd(2, 9) }; };
-    for (let i = 0; i < g; i++) { const a = rnd(TAU), q = ring(a), e = mkP('enemy', 'guard', q.x, q.y, { st: 'post' }); if (chance(.35)) e.patrol = ring(a + rnd(-0.8, 0.8)); }
+    for (let i = 0; i < g; i++) { const a = rnd(TAU), q0 = ring(a), q = WD.bAt(q0.x, q0.y, 1) ? WD.freeSpot(q0.x, q0.y, 4) : q0, e = mkP('enemy', 'guard', q.x, q.y, { st: 'post' }); if (chance(.35)) { const p2 = ring(a + rnd(-0.8, 0.8)); e.patrol = WD.bAt(p2.x, p2.y, 1) ? WD.freeSpot(p2.x, p2.y, 4) : p2; } }
     let armedDecoy = M.diff >= 2;
     for (const cd of M.cands) {
       if (cd.b === H) continue; const b = cd.b;
@@ -1454,7 +1569,7 @@ MIS.rescue = {
   },
   launch() {
     const H = M.hb, hc = { x: H.x + H.w / 2, y: H.y + H.h / 2 };
-    let s = -1; for (let t = 0; t < 150; t++) { const k = WD.randNode(60), N = WD.nodes[k], d = dist(N.x, N.y, hc.x, hc.y); if (d > 280 && d < 430) { s = k; break; } }
+    let s = -1; for (let t = 0; t < 150; t++) { const k = WD.randNode(60), N = WD.nodes[k], d = dist(N.x, N.y, hc.x, hc.y); if (d > 220 && d < 340) { s = k; break; } }
     if (s < 0) s = WD.randNode(60);
     const tn = WD.nodeNear(hc.x, hc.y), r = WD.route(s, tn) || [s, tn], pts = routePts(r, 3.2);
     pts.push(boundaryToward(H, pts[pts.length - 1].x, pts[pts.length - 1].y));
@@ -1489,7 +1604,7 @@ MIS.rescue = {
   extract() {
     const H = M.hb, sq = M.sq, hc = { x: H.x + H.w / 2, y: H.y + H.h / 2 };
     let lz = null;
-    for (let t = 0; t < 100 && !lz; t++) { const a = rnd(TAU), r = rnd(230, 360), p = WD.openSpot(hc.x + Math.cos(a) * r, hc.y + Math.sin(a) * r, 40, 10); if (WD.inside(p.x, p.y, 80) && !WD.bNear(p.x, p.y, 14).length) lz = p; }
+    for (let t = 0; t < 100 && !lz; t++) { const a = rnd(TAU), r = rnd(180, 280), p = WD.openSpot(hc.x + Math.cos(a) * r, hc.y + Math.sin(a) * r, 40, 10); if (WD.inside(p.x, p.y, 80) && !WD.bNear(p.x, p.y, 14).length) lz = p; }
     if (!lz) lz = WD.openSpot(WORLD / 2, WORLD / 2, 200, 10);
     M.lz = lz;
     const a = WD.nodeNear(hc.x, hc.y), b = WD.nodeNear(lz.x, lz.y), r = WD.route(a, b) || [a, b];
@@ -1553,7 +1668,7 @@ MIS.recon = {
     const n = rint(2, 3), armedN = Math.max(1, Math.round(n * 0.5));
     for (let i = 0; i < n; i++) {
       const src = b ? boundaryToward(b, v.x + rnd(-5, 5), v.y + rnd(-5, 5)) : { x: v.x + rnd(-15, 15), y: v.y + rnd(-15, 15) };
-      const e = mkP('enemy', 'contact', src.x, src.y, { st: 'contact', cst: 0, armed: i < armedN, passive: true, car: v, home: b, tx: v.x + rnd(-3.5, 3.5), ty: v.y + rnd(-3.5, 3.5) });
+      const e = mkP('enemy', 'contact', src.x, src.y, { st: 'contact', cst: 0, armed: i < armedN, passive: true, car: v, home: b, tx: v.x + rnd(-3.5, 3.5), ty: v.y + rnd(-3.5, 3.5) }); { const q = WD.freeSpot(e.tx, e.ty, 3); e.tx = q.x; e.ty = q.y; }
       if (e.armed) M.contactsArmed++;
     }
     MIS.recon.contactsTxt();
@@ -1613,7 +1728,7 @@ function startMission(card, diff, droneId, lo) {
   drone.ocx = f.x; drone.ocy = f.y; drone.x = f.x + Math.cos(drone.ang) * D.orbit; drone.y = f.y + Math.sin(drone.ang) * D.orbit;
   cam.x = f.x; cam.y = f.y; cam.z = cam.zt = 2; cam.slew = null;
   showHUD();
-  radio(`מבצע ׳${card.name}׳: ${M.intro}`, '', false);
+  radio(`${ZONES[card.zone].name} — ${card.camp ? `שלב ${card.stage + 1}` : 'מבצע'} ׳${card.name}׳: ${M.intro}`, '', false);
   const aaN = ents.filter(e => e.alive && (e.aa || e.role === 'manpads')).length;
   radio(aaN ? `מודיעין: יש נ״מ באזור (${aaLabel(diff, card.zone)}). שימו לב להתרעות.` : 'אין איום נ״מ על הרחפן במשימה הזו', aaN ? 'warn' : 'good');
   if (M.tod === 'night' && !upv('thermal')) radio('משימת לילה בלי מצלמה תרמית — יהיה קשה לראות', 'warn');
@@ -1701,6 +1816,7 @@ function update(dt) {
   updShots(dt); updRockets(dt); updEmiss(dt); updHelis(dt); updParts(dt);
   for (let i = timers.length - 1; i >= 0; i--) { if (i >= timers.length) continue; timers[i].t -= dt; if (timers[i].t <= 0) { const f = timers[i].fn; timers.splice(i, 1); f(); } }
   if (!M.over && MIS[M.type].update) MIS[M.type].update(dt);
+  if (!M.over && M.type !== 'recon') checkAmmo(dt);
   if (upv('ai')) autoId(dt);
   staticT = Math.max(0, staticT - dt); flashT = Math.max(0, flashT - dt); shake *= Math.exp(-dt * 5);
   M.aaAlert = Math.max(0, (M.aaAlert || 0) - dt);
@@ -1712,7 +1828,7 @@ function update(dt) {
 /* ---------- מצב הדגמה ברקע התפריט ---------- */
 let demo = null;
 function demoInit() {
-  const zone = pick(['urban', 'village', 'urban', 'open']);
+  const zone = pick(ZORDER);
   WD = genWorld((Math.random() * 2 ** 31) | 0, zone); resetWorldState(); M = null; drone = null;
   for (let i = 0; i < 16; i++) { const ed = WD.randEdge(0); if (!ed) break; const v = mkV('civ', 'car', 0, 0, { st: 'drive' }); placeOnEdge(v, ed, rnd(), 2.6); }
   for (let i = 0; i < 50; i++) { const ed = WD.randEdge(0.2); if (!ed) break; const p = mkP('civ', 'civ', 0, 0, { st: 'walk' }); placeOnEdge(p, ed, rnd(), (chance(.5) ? 1 : -1) * rnd(4.6, 6.2)); }
@@ -1823,9 +1939,12 @@ function drawWorld(sc) {
   const vis = []; for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) vis.push(WD.tiles[ty * TN + tx]);
   if (!th) { ctx.fillStyle = night ? 'rgba(20,18,12,0.18)' : 'rgba(28,24,16,0.36)'; for (const T of vis) ctx.fill(T.psh); }
   for (const T of vis) if (T.hasRub) { ctx.fillStyle = th ? '#474747' : '#7a766c'; ctx.fill(T.prubB); ctx.fillStyle = th ? '#5f5f5f' : '#57534b'; ctx.fill(T.prub); }
-  const BC = th ? TH_B : DAY_B;
-  for (let s = 0; s < 4; s++) { ctx.fillStyle = BC[s]; for (const T of vis) ctx.fill(T.pb[s]); }
+  const BC = th ? TH_B : WD.bcol;
+  for (let s = 0; s < 5; s++) { ctx.fillStyle = BC[s]; for (const T of vis) ctx.fill(T.pb[s]); }
   if (sc > 1.3) { ctx.strokeStyle = th ? 'rgba(0,0,0,0.3)' : 'rgba(50,45,35,0.5)'; ctx.lineWidth = Math.max(0.2, 0.9 / sc); for (const T of vis) ctx.stroke(T.pall); }
+  if (!th) { ctx.fillStyle = 'rgba(28,24,16,0.33)'; for (const T of vis) ctx.fill(T.ptksh); }
+  ctx.fillStyle = th ? '#7a7a7a' : '#cfd2d0'; for (const T of vis) ctx.fill(T.ptk);
+  ctx.strokeStyle = th ? '#555' : '#8d9290'; ctx.lineWidth = 0.5; for (const T of vis) ctx.stroke(T.ptk);
   if (sc > 2.6) { ctx.fillStyle = th ? '#474747' : '#3b3a36'; for (const T of vis) ctx.fill(T.ptank); ctx.fillStyle = th ? '#505050' : '#4f5c68'; for (const T of vis) ctx.fill(T.psol); }
   /* מבנים, רכבים, גופות */
   for (const e of ents) {
@@ -1837,8 +1956,8 @@ function drawWorld(sc) {
   if (!th) drawPeople(sc, false, inV);
   /* עצים */
   if (!th) {
-    ctx.fillStyle = 'rgba(20,22,12,0.33)'; for (const T of vis) ctx.fill(T.ptsh);
-    ctx.fillStyle = WD.zk === 'open' ? '#5f6444' : '#4a5636'; for (const T of vis) ctx.fill(T.pt);
+    if (sc > 1.3) { ctx.fillStyle = 'rgba(20,22,12,0.33)'; for (const T of vis) ctx.fill(T.ptsh); }
+    ctx.fillStyle = WD.Z.tree; for (const T of vis) ctx.fill(T.pt);
     if (sc > 2) { ctx.fillStyle = 'rgba(135,155,95,0.22)'; for (const T of vis) ctx.fill(T.pthi); }
   } else { ctx.fillStyle = 'rgba(33,33,33,0.82)'; for (const T of vis) ctx.fill(T.pt); }
   if (th) {
@@ -1929,6 +2048,20 @@ function drawStatic(e, th) {
       ctx.fillStyle = dead ? (th ? '#999' : '#24211d') : th ? '#6c6c6c' : '#7a6a48';
       ctx.fillRect(-1.6, -1.1, 1.5, 1.1); ctx.fillRect(0.2, -1.2, 1.4, 1.2); ctx.fillRect(-1.0, 0.25, 1.6, 1.0);
       if (e.role === 'cache' && !dead) { ctx.fillStyle = th ? '#5a5a5a' : '#56653f'; ctx.fillRect(-2.1, -1.6, 4.2, 1.2); }
+      break;
+    case 'tel': // משגר טילים בליסטיים: משאית ארוכה עם טיל
+      if (!th && !dead) { ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(-6 + 0.6, -1.6 + 0.8, 12, 3.2); }
+      ctx.fillStyle = dead ? (th ? '#bbb' : '#1d1b19') : th ? '#7d7d7d' : '#4f5a3c'; ctx.fillRect(-6, -1.6, 12, 3.2);
+      if (!dead) {
+        ctx.fillStyle = th ? '#9a9a9a' : '#3f4930'; ctx.fillRect(4, -1.6, 2.2, 3.2);
+        ctx.fillStyle = th ? '#c8c8c8' : '#d9dbd6'; ctx.fillRect(-5.6, -0.6, 9.4, 1.2);
+        ctx.beginPath(); ctx.moveTo(3.8, -0.6); ctx.lineTo(4.8, 0); ctx.lineTo(3.8, 0.6); ctx.fill();
+        if (th) { ctx.globalAlpha = 0.7; ctx.drawImage(GLOW, 3.5, -2, 4, 4); ctx.globalAlpha = 1; }
+      }
+      break;
+    case 'uav': // מסילת שיגור ורחפני תקיפה
+      ctx.strokeStyle = dead ? (th ? '#999' : '#24211d') : th ? '#8a8a8a' : '#55534c'; ctx.lineWidth = 0.5; ctx.beginPath(); ctx.moveTo(-3, 0); ctx.lineTo(3.2, 0); ctx.stroke();
+      if (!dead) { ctx.fillStyle = th ? '#b0b0b0' : '#6c6f68'; for (const [dx, dy] of [[0, 0], [-1.5, 2.2], [1.2, 2.4]]) { ctx.beginPath(); ctx.moveTo(dx + 1.1, dy); ctx.lineTo(dx - 0.8, dy - 1); ctx.lineTo(dx - 0.8, dy + 1); ctx.closePath(); ctx.fill(); } }
       break;
     case 'shaft':
       if (!th) { ctx.fillStyle = '#b5a787'; circle(2.6, 1.4, 2.2); }
@@ -2108,7 +2241,7 @@ function drawHUD(sc) {
   for (const b of WD.B) {
     if (!b.label || b.ruined) continue;
     if (b.tgt && M.type === 'strike' && M.targets.some(t => t.b === b && t.revealed)) continue;
-    const perm = b.tgt && b.label === 'מחסן אמצעי לחימה';
+    const perm = b.tgt && b.label === b.tgtName;
     if (!perm && !(b.labelT > 0)) continue;
     const p = w2s(b.x + b.w / 2, b.y + b.h / 2); tag(b.label, p.x, p.y, perm ? '#ff5a4f' : '#d8e8dc', 10);
   }
@@ -2245,14 +2378,19 @@ function confirmBox(text, okText, onOk) {
   showModal(`<h2>${text}</h2><div style="display:flex;gap:8px;margin-top:16px"><button class="btn red" style="flex:1" onclick="UI._ok()">${okText}</button><button class="btn" style="flex:1" onclick="hideModal()">ביטול</button></div>`);
 }
 
-/* ---------- לוח משימות ---------- */
-function newCard(type) {
+/* ---------- לוח משימות ואזורים ---------- */
+function newCard(type, zone) {
   const r = Math.random, th = S && upv('thermal') > 0, q = r();
-  return { type, zone: ['urban', 'urban', 'village', 'village', 'open'][Math.floor(r() * 5)], tod: q < 0.6 ? 'day' : (q < 0.82 || !th) ? 'dusk' : 'night',
-    seed: (r() * 2 ** 31) | 0, name: OPNAMES[Math.floor(r() * OPNAMES.length)] };
+  return { type, zone, tod: q < 0.6 ? 'day' : (q < 0.82 || !th) ? 'dusk' : 'night', seed: (r() * 2 ** 31) | 0, name: OPNAMES[Math.floor(r() * OPNAMES.length)] };
 }
-function ensureBoard() { if (!S.board || S.board.length !== MORDER.length) S.board = MORDER.map(newCard); }
-
+function boardTypes(r) { const t = REGION_TYPES[r].slice(); while (t.length < 3) t.push('strike'); return t.slice(0, 4); }
+function ensureBoard(r) { r = r || S.region; if (!S.boards[r] || !S.boards[r].length) S.boards[r] = boardTypes(r).map(t => newCard(t, r)); }
+function campCard(r) {
+  const st = CAMPAIGN[r].stages[S.camp[r]]; if (!st) return null;
+  const c = newCard(st.type, r); c.name = st.name; c.camp = true; c.stage = S.camp[r]; c.diff = st.diff;
+  c.seed = (ZORDER.indexOf(r) * 1000 + S.camp[r] * 37 + 12345) | 0; if (c.tod === 'night' && !upv('thermal')) c.tod = 'dusk';
+  return c;
+}
 /* ---------- תפריט ראשי ---------- */
 function showMenu() {
   $('hud').classList.add('hidden'); hideModal();
@@ -2268,7 +2406,7 @@ function showMenu() {
     </div>
     <p class="note" style="text-align:center;margin-top:28px">שם זמני · גרסה ראשונה</p></div>`);
 }
-UI.cont = () => { auInit(); S = loadSave() || newSave(); ensureBoard(); save(); showBase('missions'); };
+UI.cont = () => { auInit(); S = loadSave() || newSave(); if (!regionOpen(S.region)) S.region = 'gaza'; ensureBoard(); save(); showBase('missions'); };
 UI.newGame = () => {
   auInit();
   const go = () => { S = newSave(); ensureBoard(); save(); showBase('missions'); UI.help(); };
@@ -2290,16 +2428,33 @@ function showBase(tab) {
   showScreen(`<div class="wrap">${hdr}${tabs}${body}</div>`, same);
 }
 function missionsHTML() {
-  return `<div class="row" style="margin-bottom:10px;flex-wrap:wrap"><div class="note">בחרו משימה, ובתדריך — רמת קושי. ככל שהמשימה קשה יותר, התגמול גבוה יותר.</div><button class="btn sm" onclick="UI.reroll()">רענון משימות</button></div>
+  ensureBoard();
+  const reg = S.region, Z = ZONES[reg], C = CAMPAIGN[reg], done = S.camp[reg], st = C.stages;
+  const chips = ZORDER.map(r => { const open = regionOpen(r);
+    return `<button class="tab ${r === reg ? 'on' : ''}" ${open ? `onclick="UI.region('${r}')"` : ''} style="${open ? '' : 'opacity:.45'}">${open ? '' : '🔒 '}${ZONES[r].name}${open ? ` <small class="note">${S.camp[r]}/5</small>` : ''}</button>`; }).join('');
+  const locked = ZORDER.filter(r => !regionOpen(r)).map(r => `${ZONES[r].name} — נפתח אחרי ${CAMPAIGN[r].need[1]} שלבים ב${ZONES[CAMPAIGN[r].need[0]].name}`);
+  const stages = st.map((x, i) => `<span class="tag ${i < done ? 'g' : i === done ? 'w' : ''}">${i < done ? '✔' : i + 1} ${x.name}</span>`).join('');
+  const cc = done < st.length ? (() => { const x = st[done], T = MTYPES[x.type]; return `<div class="card click" onclick="UI.briefCamp()" style="border-color:var(--acc2)">
+      <h3><span class="ic">${T.icon}</span>שלב ${done + 1}: ${x.name}</h3>
+      <div class="tags"><span class="tag">${T.name}</span><span class="tag">${DIFFS[x.diff].name}</span><span class="tag ${Z.aa >= 1 ? 'w' : ''}">איום נ״מ: ${aaLabel(x.diff, reg)}</span></div>
+      <p>${T.desc}</p><div class="row"><span class="note">תגמול מערכה (×${CAMP_MULT})</span><span class="price">${fmtMoney(T.base * DIFFS[x.diff].mult * CAMP_MULT)}</span></div></div>`; })()
+    : `<div class="card"><h3>✔ המערכה ב${Z.name} הושלמה</h3><p>אפשר להמשיך במשימות הנוספות למטה.</p></div>`;
+  return `<div class="tabs" style="border:0;margin-bottom:6px">${chips}</div>
+  ${locked.length ? `<p class="note">${locked.join(' · ')}</p>` : ''}
+  <p class="note">${Z.name}: ${Z.desc} · איום נ״מ ${Z.threat}</p>
   ${S.money < 0 ? '<p class="note" style="color:var(--bad)">התקציב במינוס — רימונים תמיד זמינים בחינם, אז אפשר להמשיך במשימות ולהחזיר את החוב.</p>' : ''}
-  <div class="grid">${S.board.map((c, i) => {
+  <div class="sec">מערכה: ${Z.name} — שלב ${Math.min(done + 1, st.length)}/${st.length}</div><div class="tags" style="margin-bottom:8px">${stages}</div>
+  <div class="grid">${cc}</div>
+  <div class="row" style="margin-top:16px;flex-wrap:wrap"><div class="sec" style="margin:0">משימות נוספות ב${Z.name} — אתם בוחרים את הקושי</div><button class="btn sm" onclick="UI.reroll()">רענון משימות</button></div>
+  <div class="grid" style="margin-top:8px">${S.boards[reg].map((c, i) => {
     const T = MTYPES[c.type];
     return `<div class="card click" onclick="UI.brief(${i})"><h3><span class="ic">${T.icon}</span>${T.name}</h3>
-      <div class="tags"><span class="tag">מבצע ׳${esc(c.name)}׳</span><span class="tag">${ZONES[c.zone].sector}</span><span class="tag ${c.tod === 'night' ? 'n' : c.tod === 'dusk' ? 'w' : ''}">${TOD_TXT[c.tod]}</span><span class="tag ${ZONES[c.zone].aa >= 1 ? 'w' : ''}">איום נ״מ: ${ZONES[c.zone].threat}</span></div>
-      <p>${T.desc}</p><p class="note">${ZONES[c.zone].name}</p>
+      <div class="tags"><span class="tag">מבצע ׳${esc(c.name)}׳</span><span class="tag ${c.tod === 'night' ? 'n' : c.tod === 'dusk' ? 'w' : ''}">${TOD_TXT[c.tod]}</span></div>
+      <p>${T.desc}</p>
       <div class="row"><span class="note">תגמול</span><span class="price">${fmtMoney(T.base)} – ${fmtMoney(T.base * 5)}</span></div></div>`;
   }).join('')}</div>`;
 }
+UI.region = r => { if (!regionOpen(r)) return; S.region = r; ensureBoard(r); save(); SFX.click(); showBase('missions'); };
 function hangarHTML() {
   const dr = DORDER.filter(k => S.drones[k]).map(k => {
     const D = DRONES[k];
@@ -2347,7 +2502,7 @@ UI.buyDrone = k => { if (pay(DRONES[k].price)) { S.drones[k] = 1; toast(`נקנ�
 UI.buyAmmo = k => { const W = WEAPONS[k]; if (pay(W.price)) { S.ammo[k] = (S.ammo[k] || 0) + W.pack; toast(`נקנו ${W.pack} × ${W.name}`); showBase('shop'); } };
 UI.buyAir = () => { if (pay(AIRSTRIKE_PRICE)) { S.air++; toast('נקנתה תקיפת מטוס'); showBase('shop'); } };
 UI.buyUp = id => { const u = UPGRADES.find(x => x.id === id), lv = S.up[id] || 0, nx = u.levels[lv + 1]; if (nx && pay(nx.price)) { S.up[id] = lv + 1; toast(`${u.name}: ${u.show(nx.v)}`); showBase('shop'); } };
-UI.reroll = () => { S.board = MORDER.map(newCard); save(); SFX.click(); showBase('missions'); };
+UI.reroll = () => { S.boards[S.region] = null; ensureBoard(); save(); SFX.click(); showBase('missions'); };
 
 /* ---------- תדריך ---------- */
 let BR = null;
@@ -2361,13 +2516,19 @@ const slotRounds = (k, n) => { const W = WEAPONS[k]; return W.free ? n * W.perSl
 const usedSlots = () => Object.values(BR.slots).reduce((a, b) => a + b, 0);
 UI.brief = i => {
   auInit();
-  const card = S.board[i], did = S.drones[S.lastDrone] ? S.lastDrone : 'wasp';
+  const card = S.boards[S.region][i], did = S.drones[S.lastDrone] ? S.lastDrone : 'wasp';
   BR = { i, card, diff: S.lastDiff[card.type] || 0, drone: did, slots: defaultSlots(did) };
+  renderBrief(false);
+};
+UI.briefCamp = () => {
+  auInit();
+  const card = campCard(S.region); if (!card) return; const did = S.drones[S.lastDrone] ? S.lastDrone : 'wasp';
+  BR = { camp: true, card, diff: card.diff, drone: did, slots: defaultSlots(did) };
   renderBrief(false);
 };
 function renderBrief(keep) {
   const { card, diff } = BR, T = MTYPES[card.type], Df = DIFFS[diff], D = DRONES[BR.drone], used = usedSlots(), night = card.tod === 'night';
-  const diffs = DIFFS.map((d, i) => `<button class="diff ${i === diff ? 'on' : ''}" onclick="UI.setDiff(${i})">${d.name}</button>`).join('');
+  const diffs = BR.camp ? `<button class="diff on" style="grid-column:span 5">${Df.name} — קבוע בשלב מערכה</button>` : DIFFS.map((d, i) => `<button class="diff ${i === diff ? 'on' : ''}" onclick="UI.setDiff(${i})">${d.name}</button>`).join('');
   const drones = DORDER.filter(k => S.drones[k]).map(k => { const d = DRONES[k]; return `<button class="dopt ${k === BR.drone ? 'on' : ''}" onclick="UI.setDrone('${k}')"><span><b>${d.name}</b> <small>${d.type}</small></span><small>${d.slots} תחנות · עמידות ${Math.round(d.hp * upv('armor'))}</small></button>`; }).join('');
   const rows = compatible(BR.drone).map(k => {
     const W = WEAPONS[k], n = BR.slots[k] || 0, st = W.free ? Infinity : (S.ammo[k] || 0), canAdd = used < D.slots && (W.free || st > n * W.perSlot);
@@ -2376,14 +2537,14 @@ function renderBrief(keep) {
       <span class="note" style="min-width:46px;text-align:left">×${slotRounds(k, n)}</span></div>`;
   }).join('');
   const missing = WORDER.filter(k => WEAPONS[k].cls > D.cls).map(k => WEAPONS[k].short);
-  showModal(`<button class="x" onclick="hideModal()" aria-label="סגירה">✕</button><h2>${T.icon} ${T.name} — מבצע ׳${esc(card.name)}׳</h2>
-    <div class="tags" style="margin:6px 0 10px"><span class="tag">${ZONES[card.zone].sector} · ${ZONES[card.zone].name}</span><span class="tag ${night ? 'n' : ''}">${TOD_TXT[card.tod]}</span></div>
+  showModal(`<button class="x" onclick="hideModal()" aria-label="סגירה">✕</button><h2>${T.icon} ${T.name} — ${card.camp ? `שלב ${card.stage + 1}: ` : 'מבצע '}׳${esc(card.name)}׳</h2>
+    <div class="tags" style="margin:6px 0 10px"><span class="tag">${ZONES[card.zone].name} · ${ZONES[card.zone].desc}</span><span class="tag ${night ? 'n' : ''}">${TOD_TXT[card.tod]}</span></div>
     <p class="note" style="font-size:14px;color:#c4d2c8">${T.desc}</p>
     <div class="sec">רמת קושי</div><div class="diffs">${diffs}</div>
-    <div class="stat"><div><span>תגמול:</span> <b class="price">${fmtMoney(T.base * Df.mult)}</b> + בונוסים</div><div><span>כוח אויב:</span> ${Df.force}</div><div><span>נ״מ:</span> ${aaLabel(diff, card.zone)}</div><div><span>זמן:</span> ${diff <= 1 ? 'נדיב' : diff <= 2 ? 'רגיל' : 'לחוץ'}</div></div>
+    <div class="stat"><div><span>תגמול:</span> <b class="price">${fmtMoney(T.base * Df.mult * (card.camp ? CAMP_MULT : 1))}</b> + בונוסים</div><div><span>כוח אויב:</span> ${Df.force}</div><div><span>נ״מ:</span> ${aaLabel(diff, card.zone)}</div><div><span>זמן:</span> ${diff <= 1 ? 'נדיב' : diff <= 2 ? 'רגיל' : 'לחוץ'}</div></div>
     ${night && !upv('thermal') ? '<p class="note" style="color:var(--warn)">משימת לילה — בלי מצלמה תרמית כמעט לא רואים.</p>' : ''}
     ${Df.aa * ZONES[card.zone].aa >= 1.5 ? '<p class="note" style="color:var(--warn)">ייתכנו טילי כתף באזור — כשמופיעה התרעה, לוחצים על ״נוריות״.</p>' : ''}
-    <p class="note">רמת הנ״מ תלויה בגזרה: בדרום לאויב כמעט אין אמצעים, בצפון הרבה, ובמזרח בינוני.</p>
+    <p class="note">רמת הנ״מ תלויה באזור: בעזה לאויב כמעט אין אמצעים, בלבנון הרבה, ובתימן ובאיראן בינוני.</p>
     <div class="sec">רחפן</div><div class="dlist">${drones}</div>
     <div class="sec">חימוש — תחנות ${used}/${D.slots}</div>${rows}
     ${missing.length ? `<p class="note">לא נתמך ב״${D.name}״: ${missing.join(', ')}</p>` : ''}
@@ -2396,9 +2557,9 @@ UI.slot = (k, d) => { const n = (BR.slots[k] || 0) + d; if (n < 0 || (d > 0 && u
 UI.launch = () => {
   const lo = []; for (const k of WORDER) { const n = BR.slots[k] || 0; if (n > 0) { const r = slotRounds(k, n); if (r > 0) lo.push({ w: k, n: r }); } }
   if (!lo.length) return;
-  S.lastDiff[BR.card.type] = BR.diff; S.lastDrone = BR.drone; save();
+  if (!BR.camp) S.lastDiff[BR.card.type] = BR.diff; S.lastDrone = BR.drone; save();
   hideModal(); hideScreen();
-  startMission(BR.card, BR.diff, BR.drone, lo); M.cardIdx = BR.i;
+  startMission(BR.card, BR.diff, BR.drone, lo); M.src = BR.camp ? { camp: S.region } : { board: S.region, i: BR.i };
 };
 
 /* ---------- סיכום משימה ---------- */
@@ -2406,6 +2567,8 @@ function computeResult() {
   const base = Math.round(MTYPES[M.type].base * M.Df.mult), lines = []; let total = 0;
   if (M.win) {
     lines.push([`תגמול משימה (${M.Df.name})`, base]); total += base;
+    if (M.card.camp) { const cb = Math.round(base * (CAMP_MULT - 1)); lines.push(['תוספת שלב מערכה', cb]); total += cb;
+      if (M.card.stage === CAMPAIGN[M.zone].stages.length - 1 && S.camp[M.zone] <= M.card.stage) { lines.push([`סיום המערכה ב${ZONES[M.zone].name}`, CAMP_BONUS]); total += CAMP_BONUS; } }
     if (M.type !== 'recon') { const tb = Math.round(base * 0.25 * clamp(M.timeLeft / M.total, 0, 1)); if (tb > 0) { lines.push(['בונוס זמן', tb]); total += tb; } }
     for (const b of M.bonus) { const v = Math.round(base * b.f); lines.push([b.text, v]); total += v; }
     if (M.stats.civ) { const p = -Math.round(base * Math.min(0.4, M.stats.civ * 0.08)); lines.push([`פגיעה באזרחים (${M.stats.civ})`, p]); total += p; }
@@ -2423,7 +2586,8 @@ function showDebrief() {
   const used = [];
   for (const s of loadout) { const u = s.max - s.n; if (u > 0) used.push(`${WEAPONS[s.w].short} ${u}`); if (!WEAPONS[s.w].free) S.ammo[s.w] = Math.max(0, (S.ammo[s.w] || 0) - u); }
   if (M.airUsed) used.push(`מטוס ${M.airUsed}`);
-  if (M.win) { S.stats.done++; S.stats.earned += Math.max(0, r.total); if (M.cardIdx !== undefined) S.board[M.cardIdx] = newCard(M.type); } else S.stats.failed++;
+  if (M.win) { S.stats.done++; S.stats.earned += Math.max(0, r.total); if (M.src && M.src.camp) { const r = M.src.camp, before = ZORDER.filter(regionOpen); S.camp[r] = Math.max(S.camp[r], M.card.stage + 1); M.newRegions = ZORDER.filter(x => regionOpen(x) && !before.includes(x)); }
+    else if (M.src) S.boards[M.src.board][M.src.i] = newCard(M.type, M.src.board); } else S.stats.failed++;
   S.stats.kills += M.stats.kills; S.stats.civ += M.stats.civ;
   save();
   const after = rankOf(S.stats.done);
@@ -2436,11 +2600,12 @@ function showDebrief() {
       <tr><td><b>סה״כ</b></td><td class="${r.total >= 0 ? 'pos' : 'neg'}"><b>${r.total > 0 ? '+' : ''}${fmtMoney(r.total)}</b></td></tr></table>
     <div class="stat"><div><span>חוסלו:</span> ${M.stats.kills}</div><div><span>אזרחים שנפגעו:</span> ${M.stats.civ}</div><div><span>תחמושת:</span> ${used.join(', ') || 'לא נורתה'}</div><div><span>תקציב:</span> ${fmtMoney(S.money)}</div></div>
     ${after !== before ? `<p class="pos" style="font-weight:700">דרגה חדשה: ${after}!</p>` : ''}
-    <div style="display:flex;gap:8px;margin-top:8px"><button class="btn pri" style="flex:1" onclick="UI.toBase()">חזרה לבסיס</button>${!M.win && M.cardIdx !== undefined ? '<button class="btn" onclick="UI.retry()">ניסיון חוזר</button>' : ''}</div>
+    ${M.newRegions && M.newRegions.length ? `<p class="pos" style="font-weight:700">נפתח אזור חדש: ${M.newRegions.map(r => ZONES[r].name).join(', ')}!</p>` : ''}
+    <div style="display:flex;gap:8px;margin-top:8px"><button class="btn pri" style="flex:1" onclick="UI.toBase()">חזרה לבסיס</button>${!M.win && M.src ? '<button class="btn" onclick="UI.retry()">ניסיון חוזר</button>' : ''}</div>
   </div></div>`);
 }
 UI.toBase = () => { demoInit(); showBase('missions'); };
-UI.retry = () => { const i = M && M.cardIdx; demoInit(); showBase('missions'); if (i !== undefined) UI.brief(i); };
+UI.retry = () => { const src = M && M.src; demoInit(); showBase('missions'); if (!src) return; if (src.camp) UI.briefCamp(); else UI.brief(src.i); };
 
 /* ---------- הגדרות, עזרה, הפסקה ---------- */
 UI.settings = () => {
@@ -2466,6 +2631,10 @@ UI.help = () => showModal(`<button class="x" onclick="closeModal()" aria-label="
   <h3>במחשב</h3><ul>
   <li>גרירה בעכבר, WASD או חצים — הזזה. גלגלת או Q/E — זום. לחיצה על המפה — המצלמה עוברת לשם.</li>
   <li>רווח — ירי · 1–6 — נשק · M — סימון · T — תרמי · F — נוריות · H — גובה · O — הזזת מסלול · B — תקיפת מטוס · P — הפסקה.</li></ul>
+  <h3>אזורים ומערכות</h3><ul>
+  <li>ארבעה אזורים: עזה, לבנון, תימן ואיראן. בכל אזור מערכה של 5 שלבים, וכל אזור נפתח אחרי 3 שלבים באזור הקודם.</li>
+  <li>בשלבי מערכה הקושי קבוע והתגמול גבוה יותר. במשימות הנוספות אתם בוחרים את הקושי.</li>
+  <li>אם נגמרת כל התחמושת לפני שהשלמתם את היעדים — המשימה נכשלת. קחו מספיק!</li></ul>
   <h3>טיפים</h3><ul>
   <li>לכל נשק יש זמן מעוף, והמטרה יכולה לזוז בינתיים. לרכבים בתנועה עדיפה תחמושת משוטטת, או טיל עם מסמן לייזר.</li>
   <li>רק בזום רואים מי מחזיק נשק. פגיעה באזרחים מורידה מהתגמול.</li>
