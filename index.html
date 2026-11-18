@@ -770,11 +770,11 @@ function stepRoad(e, dt, spd) {
     A = WD.nodes[e.na]; B = WD.nodes[e.nb]; L = dist(A.x, A.y, B.x, B.y) || 1; e.t /= L;
   }
   const p = roadPos(e), k = 1 - Math.exp(-dt * 9);
-  e.x += (p.x - e.x) * k; e.y += (p.y - e.y) * k; e.ang = angLerp(e.ang, p.ang, dt * 7); e.moving = true;
+  e.x += (p.x - e.x) * k; e.y += (p.y - e.y) * k; e.ang = angLerp(e.ang, p.ang, dt * 7); e.moving = true; e.wp = (e.wp || 0) + spd * dt * 2.4;
 }
 function moveTo(e, tx, ty, spd, dt) {
   const dx = tx - e.x, dy = ty - e.y, d = Math.hypot(dx, dy); if (d < 0.25) return true;
-  const s = Math.min(d, spd * dt); e.x += dx / d * s; e.y += dy / d * s; e.ang = angLerp(e.ang, Math.atan2(dy, dx), dt * 10); e.moving = true;
+  const s = Math.min(d, spd * dt); e.x += dx / d * s; e.y += dy / d * s; e.ang = angLerp(e.ang, Math.atan2(dy, dx), dt * 10); e.moving = true; e.wp = (e.wp || 0) + s * 2.4;
   return d <= spd * dt;
 }
 /* מסלול הליכה שלא עובר דרך בניינים: קו ישר אם פנוי, אחרת דרך רשת הכבישים */
@@ -856,19 +856,56 @@ function updInside(e, dt) {
   if (e.stay) return;
   e.inT -= dt; if (e.inT <= 0) exitBuilding(e);
 }
+/* תגובה לפיצוץ או לירי בקרבת מקום: כל אחד מגיב אחרת ובעיכוב קטן לפי המרחק */
 function panic(e, x, y) {
-  if (e.inside || e.side === 'friend' || e.side === 'hostage') return;
-  if (e.side === 'civ') {
-    if (e.st === 'go' && e.run) return;
-    if (!goInside(e, 40, rnd(20, 45), true)) { const a = Math.atan2(e.y - y, e.x - x), q = WD.freeSpot(e.x + Math.cos(a) * 30, e.y + Math.sin(a) * 30, 6); e.tx = q.x; e.ty = q.y; e.tb = null; e.st = 'go'; e.run = true; e.path = null; }
-  } else if (e.side === 'enemy' && e.k === 'p') {
-    if (e.st === 'go' || e.st === 'contact' || e.role === 'hostage') return;
-    if (chance(0.55)) goInside(e, 35, rnd(8, 18), true);
+  if (e.k !== 'p' || e.inside || e.gone || e.side === 'friend' || e.side === 'hostage') return;
+  if (e.pending || ['flee', 'panic', 'prone'].includes(e.st)) { e.fear = Math.max(e.fear || 0, 8); return; }
+  const civ = e.side === 'civ', r = R();
+  if (!civ && e.st === 'fight' && chance(0.6)) return; // לוחמים באמצע קרב בדרך כלל ממשיכים לירות
+  const mode = civ ? (r < 0.38 ? 'flee' : r < 0.62 ? 'house' : r < 0.85 ? 'panic' : 'prone')
+    : (r < 0.32 ? 'flee' : r < 0.62 ? 'house' : r < 0.82 ? 'panic' : 'prone');
+  e.pending = { mode, x, y, t: rnd(0.05, 0.35) + dist(e.x, e.y, x, y) / 140 };
+  e.fear = rnd(10, 20);
+}
+function fearFlee(e, x, y) {
+  const a = Math.atan2(e.y - y, e.x - x) + gauss() * 0.9, d = rnd(25, 75), q = WD.freeSpot(e.x + Math.cos(a) * d, e.y + Math.sin(a) * d, 8);
+  e.tx = q.x; e.ty = q.y; e.tb = null; e.path = null; e.st = 'flee'; e.run = true;
+}
+function updFear(e, dt) { // מחזיר true אם האדם עסוק עכשיו בתגובת פחד
+  if (e.fear > 0) e.fear -= dt;
+  if (e.pending) {
+    e.pending.t -= dt; if (e.pending.t > 0) { e.ang += gauss() * dt * 6; return true; } // רגע של הלם
+    const P = e.pending; e.pending = null; e.panicX = P.x; e.panicY = P.y;
+    if (P.mode === 'house') { if (!goInside(e, 45, rnd(15, 40), true)) fearFlee(e, P.x, P.y); }
+    else if (P.mode === 'flee') fearFlee(e, P.x, P.y);
+    else if (P.mode === 'panic') { e.st = 'panic'; e.t = rnd(3, 8); e.jt = 0; }
+    else { e.st = 'prone'; e.t = rnd(4, 10); }
+    return true;
   }
+  switch (e.st) {
+    case 'flee': if (walkTo(e, e.tx, e.ty, e.side === 'civ' ? 3.8 : 4.1, dt)) { e.st = 'cower'; e.t = rnd(6, 16); } return true;
+    case 'panic': // מסתובבים במקום, צעדים קצרים לכל כיוון
+      e.t -= dt; e.jt -= dt;
+      if (e.jt <= 0) { e.jt = rnd(0.3, 0.8); const q = { x: e.x + rnd(-3, 3), y: e.y + rnd(-3, 3) }; if (!WD.bAt(q.x, q.y, 0.6)) { e.tx = q.x; e.ty = q.y; } }
+      moveTo(e, e.tx, e.ty, 2.2, dt); e.ang += Math.sin(M ? M.t * 9 + e.id : 0) * dt * 5;
+      if (e.t <= 0) { if (chance(0.5)) fearFlee(e, e.panicX, e.panicY); else { e.st = 'cower'; e.t = rnd(4, 10); } }
+      return true;
+    case 'prone': e.t -= dt; if (e.t <= 0) { if (chance(0.6)) fearFlee(e, e.panicX, e.panicY); else { e.st = 'cower'; e.t = rnd(3, 8); } } return true;
+    case 'cower': // מסתתרים ומסתכלים סביב, ואז חוזרים לשגרה
+      e.t -= dt; if (chance(dt * 1.5)) e.ang += rnd(-2, 2);
+      if (e.t <= 0 && !(e.fear > 0)) {
+        if (e.side === 'civ') { const q = WD.nearestRoad(e.x, e.y); if (q) { e.na = q.na; e.nb = q.nb; e.t = q.t; e.off = (chance(.5) ? 1 : -1) * rnd(4.6, 6); const rp = roadPos(e); e.tx = rp.x; e.ty = rp.y; e.st = 'toroad'; e.path = null; } else { e.st = 'stand'; e.t = 5; } }
+        else if (e.huntSq && squadLead(e.huntSq)) { e.st = 'hunt'; e.path = null; }
+        else { e.st = 'move'; e.tx = e.hx; e.ty = e.hy; e.path = null; }
+      }
+      return e.side === 'civ';
+  }
+  return false;
 }
 
 /* ---------- בינה: אזרחים ואויבים ---------- */
 function updCiv(e, dt) {
+  if (updFear(e, dt)) return;
   switch (e.st) {
     case 'walk':
       if (e.pause > 0) { e.pause -= dt; break; }
@@ -883,6 +920,7 @@ function updCiv(e, dt) {
 }
 const erange = e => e.role === 'rpg' ? 95 : (e.role === 'rifle' || e.role === 'guard') ? 78 : 0;
 function updEnemy(e, dt) {
+  if (updFear(e, dt)) return;
   if (e.role === 'manpads') tryManpads(e, dt);
   const R0 = erange(e);
   if (R0 && e.st !== 'go' && FR.length) {
@@ -1175,7 +1213,7 @@ function explode(x, y, Rr, dmg, o) {
     const d = dist(x, y, e.x, e.y) - e.r;
     if (d < Rr) { const f = d <= 0 ? 1 : 1 - d / Rr; let a = dmg * (0.25 + 0.75 * f); if (e.k !== 'p') a *= e.hard ? bd : lt; damage(e, a, src); }
     else if (e.k === 'p' && d < Rr * 6 + 20 && !o.small) panic(e, x, y);
-    else if (e.k === 'p' && o.small && d < 12) panic(e, x, y);
+    else if (e.k === 'p' && o.small && d < 20 && chance(0.7)) panic(e, x, y);
   }
   if (M && HOOK().onRuin) for (const b of ruined) HOOK().onRuin(b, src);
 }
@@ -1979,8 +2017,9 @@ function drawPeople(sc, th, inV) {
   for (const e of ents) {
     if (e.k !== 'p' || !e.alive || e.inside || e.gone || !inV(e.x, e.y, 3)) continue;
     const r = Math.max(e.r, minR);
+    if (th) { ctx.globalAlpha = 0.5; ctx.drawImage(GLOW, e.x - r * 2.4, e.y - r * 2.4, r * 4.8, r * 4.8); ctx.globalAlpha = 1; }
+    if (sc > 3.2) { drawFigure(e, th, sc); continue; }
     if (th) {
-      ctx.globalAlpha = 0.5; ctx.drawImage(GLOW, e.x - r * 2.4, e.y - r * 2.4, r * 4.8, r * 4.8); ctx.globalAlpha = 1;
       ctx.fillStyle = '#f7f7f7'; circle(e.x, e.y, r * 0.75);
       if (e.armed && sc > 4) drawGun(e, '#3c3c3c');
     } else {
@@ -1990,6 +2029,48 @@ function drawPeople(sc, th, inV) {
       if (sc > 3.5) { ctx.fillStyle = e.side === 'friend' ? '#3e4a2e' : 'rgba(25,20,15,0.85)'; circle(e.x + Math.cos(e.ang) * 0.12, e.y + Math.sin(e.ang) * 0.12, r * 0.45); }
     }
   }
+}
+/* דמות מלמעלה: כתפיים, ראש, ידיים ורגליים בהליכה, נשק ביד, וצל */
+const SKIN = ['#c9a27e', '#b48660', '#8f6446', '#d7b08a'], HAIR = ['#1d1712', '#2b2018', '#3a2a1c', '#151515'], SCARF = ['#e8e2d6', '#3a3f55', '#5b2b2b', '#2d2d2d', '#7a6a55'];
+function drawFigure(e, th, sc) {
+  if (e.skin === undefined) { e.skin = pick(SKIN); e.hair = e.side === 'civ' && chance(0.35) ? pick(SCARF) : pick(HAIR); e.pants = pick(['#2b2f38', '#3c3a33', '#4a4238', '#222']); }
+  const st = e.st, prone = st === 'prone', crouch = st === 'cower' || (st === 'fight' && e.side !== 'friend');
+  const walk = e.moving && !prone ? Math.sin(e.wp || 0) : 0, run = e.run || st === 'flee';
+  const col = th ? '#f2f2f2' : e.col, dark = th ? '#d0d0d0' : e.pants, headC = th ? '#ffffff' : e.side === 'friend' ? '#4b5a37' : e.hair;
+  ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(e.ang);
+  if (prone) { // שוכב על הקרקע
+    if (!th) { ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(0.3, 0.35, 1.25, 0.5, 0, 0, TAU); ctx.fill(); }
+    ctx.fillStyle = dark; ctx.fillRect(-1.25, -0.32, 0.8, 0.26); ctx.fillRect(-1.25, 0.06, 0.8, 0.26);
+    ctx.fillStyle = col; ctx.beginPath(); ctx.ellipse(-0.05, 0, 0.6, 0.42, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = th ? '#fff' : e.skin; ctx.beginPath(); ctx.arc(0.75, 0, 0.27, 0, TAU); ctx.fill();
+    ctx.fillStyle = headC; ctx.beginPath(); ctx.arc(0.68, 0, 0.24, Math.PI * 0.5, Math.PI * 1.5); ctx.fill();
+    ctx.restore(); return;
+  }
+  const k = crouch ? 0.82 : 1;
+  if (!th) { ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.beginPath(); ctx.ellipse(0.35, 0.45, 0.45 * k, 0.72 * k, 0, 0, TAU); ctx.fill(); }
+  const stride = (run ? 0.6 : 0.42) * walk;
+  ctx.fillStyle = dark; // רגליים
+  ctx.beginPath(); ctx.ellipse(stride, -0.24, 0.32, 0.17, 0, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(-stride, 0.24, 0.32, 0.17, 0, 0, TAU); ctx.fill();
+  if (e.armed && sc > 3) drawGunLocal(e, th);
+  ctx.fillStyle = col; // גוף וכתפיים
+  ctx.beginPath(); ctx.ellipse(0, 0, 0.34 * k, 0.72 * k, 0, 0, TAU); ctx.fill();
+  if (e.side === 'friend' || (e.armed && e.side === 'enemy' && e.role !== 'contact')) { ctx.fillStyle = th ? '#bdbdbd' : e.side === 'friend' ? '#3f4a30' : 'rgba(0,0,0,0.28)'; ctx.fillRect(-0.24 * k, -0.4 * k, 0.48 * k, 0.8 * k); } // אפוד
+  ctx.fillStyle = th ? '#fff' : e.skin; // ידיים
+  if (e.armed) { ctx.beginPath(); ctx.arc(0.42, -0.42, 0.13, 0, TAU); ctx.arc(0.62, 0.12, 0.13, 0, TAU); ctx.fill(); }
+  else if (st === 'panic' || st === 'cower') { ctx.beginPath(); ctx.arc(0.1, -0.48, 0.13, 0, TAU); ctx.arc(0.1, 0.48, 0.13, 0, TAU); ctx.fill(); } // ידיים על הראש
+  else { ctx.beginPath(); ctx.arc(-stride * 0.7, -0.68 * k, 0.13, 0, TAU); ctx.arc(stride * 0.7, 0.68 * k, 0.13, 0, TAU); ctx.fill(); }
+  ctx.fillStyle = th ? '#fff' : e.skin; ctx.beginPath(); ctx.arc(0.05, 0, 0.3, 0, TAU); ctx.fill(); // ראש
+  ctx.fillStyle = headC; ctx.beginPath(); ctx.arc(-0.02, 0, 0.29, Math.PI * 0.45, Math.PI * 1.55); ctx.fill();
+  if (e.side === 'friend') { ctx.beginPath(); ctx.arc(0.04, 0, 0.33, 0, TAU); ctx.fill(); } // קסדה
+  ctx.restore();
+}
+function drawGunLocal(e, th) {
+  const big = e.role === 'rpg' || e.role === 'manpads';
+  ctx.strokeStyle = th ? '#3c3c3c' : '#141414'; ctx.lineCap = 'butt';
+  if (big) { ctx.lineWidth = 0.42; ctx.beginPath(); ctx.moveTo(-1.1, -0.45); ctx.lineTo(1.4, -0.45); ctx.stroke(); }
+  else { ctx.lineWidth = 0.22; ctx.beginPath(); ctx.moveTo(-0.3, -0.35); ctx.lineTo(1.55, 0.05); ctx.stroke(); ctx.lineWidth = 0.32; ctx.beginPath(); ctx.moveTo(0.25, -0.22); ctx.lineTo(0.55, -0.15); ctx.stroke(); }
+  ctx.lineCap = 'round';
 }
 function drawGun(e, col) {
   const a = e.ang, big = e.role === 'rpg' || e.role === 'manpads';
@@ -2002,7 +2083,12 @@ function drawBody(e, th) {
   const fade = clamp(1 - e.deadT / 120, 0, 1);
   ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(e.ang);
   if (th) { ctx.fillStyle = `rgba(${Math.round(90 + 140 * fade)},${Math.round(90 + 140 * fade)},${Math.round(90 + 140 * fade)},0.85)`; ctx.fillRect(-1.1, -0.45, 2.2, 0.9); }
-  else { ctx.fillStyle = 'rgba(45,30,22,0.35)'; ctx.beginPath(); ctx.arc(0.2, 0.2, 1.2, 0, TAU); ctx.fill(); ctx.fillStyle = e.col; ctx.fillRect(-1.1, -0.42, 2.2, 0.84); }
+  else {
+    ctx.fillStyle = 'rgba(45,30,22,0.3)'; ctx.beginPath(); ctx.ellipse(0.1, 0.2, 1.4, 0.9, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = e.pants || '#2b2f38'; ctx.fillRect(-1.25, -0.36, 0.8, 0.26); ctx.fillRect(-1.2, 0.12, 0.75, 0.26);
+    ctx.fillStyle = e.col; ctx.beginPath(); ctx.ellipse(-0.05, 0, 0.6, 0.44, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = e.skin || '#b48660'; ctx.beginPath(); ctx.arc(0.75, 0.05, 0.27, 0, TAU); ctx.arc(0.25, 0.7, 0.13, 0, TAU); ctx.arc(0.3, -0.62, 0.13, 0, TAU); ctx.fill();
+  }
   ctx.restore();
 }
 function drawVeh(e, th) {
@@ -2510,8 +2596,13 @@ const compatible = did => WORDER.filter(k => WEAPONS[k].cls <= DRONES[did].cls);
 const kgTxt = v => (Math.round(v * 10) / 10).toLocaleString('en-US');
 const loadKg = L => Object.entries(L).reduce((a, [k, n]) => a + n * WEAPONS[k].wt, 0);
 const stockOf = k => WEAPONS[k].free ? Infinity : (S.ammo[k] || 0);
-function defaultLoad(did) { // חימוש התחלתי: קצת מכל מה שיש במלאי, ואת השאר ממלאים ברימונים
+function defaultLoad(did) { // החימוש האחרון שנבחר לרחפן הזה; אם אין — קצת מכל מה שיש במלאי, ואת השאר ברימונים
   const D = DRONES[did], c = compatible(did), L = {};
+  const last = S.lastLoad && S.lastLoad[did];
+  if (last) { // מתאימים למלאי ולמשקל הנוכחיים
+    for (const k of WORDER) { if (!last[k] || !c.includes(k)) continue; let n = Math.min(last[k], stockOf(k)); while (n > 0 && loadKg(L) + n * WEAPONS[k].wt > D.pay + 1e-9) n -= WEAPONS[k].step; if (n > 0) L[k] = n; }
+    return L;
+  }
   const add = (k, n) => { if (!c.includes(k)) return; n = Math.min(n, stockOf(k)); while (n > 0 && loadKg(L) + n * WEAPONS[k].wt > D.pay) n -= WEAPONS[k].step; if (n > 0) L[k] = n; };
   add('bomb', 1); add('missile', 2); add('loiter', 1); add('gun', 100);
   add('grenade', Math.min(10, Math.floor(D.pay - loadKg(L))));
@@ -2566,7 +2657,7 @@ UI.load = (k, d) => { // d: 1 / -1 צעד אחד, 99 = כמה שנכנס
 UI.launch = () => {
   const lo = []; for (const k of WORDER) { const n = Math.min(BR.load[k] || 0, stockOf(k)); if (n > 0) lo.push({ w: k, n }); }
   if (!lo.length) return;
-  if (!BR.camp) S.lastDiff[BR.card.type] = BR.diff; S.lastDrone = BR.drone; save();
+  if (!BR.camp) S.lastDiff[BR.card.type] = BR.diff; S.lastDrone = BR.drone; S.lastLoad = S.lastLoad || {}; S.lastLoad[BR.drone] = Object.assign({}, BR.load); save();
   hideModal(); hideScreen();
   startMission(BR.card, BR.diff, BR.drone, lo); M.src = BR.camp ? { camp: S.region } : { board: S.region, i: BR.i };
 };
