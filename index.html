@@ -51,6 +51,8 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
 .wb.on small{color:var(--acc)}
 #fireBtn{position:absolute;right:calc(12px + env(safe-area-inset-right));bottom:calc(12px + env(safe-area-inset-bottom));width:82px;height:82px;border-radius:50%;background:rgba(110,8,8,.6);border:2px solid var(--bad);color:#fff;font-weight:800;font-size:18px;letter-spacing:1px}
 #fireBtn.held{background:rgba(220,30,30,.85)}
+#hurryBtn{position:absolute;right:calc(100px + env(safe-area-inset-right));bottom:calc(68px + env(safe-area-inset-bottom));border-color:var(--friend);color:#d5eeff}
+#hurryBtn.on{background:rgba(30,90,140,.8);color:#fff}
 #banner{position:absolute;bottom:calc(150px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:rgba(6,12,9,.88);border:1px solid var(--acc);color:var(--acc);padding:7px 14px;border-radius:8px;font-size:13px;white-space:nowrap}
 @media (max-height:520px){
   .hb{height:38px;min-width:44px;font-size:12px}
@@ -150,6 +152,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
     <button class="hb" id="zOut" aria-label="זום החוצה">－</button>
     <button class="hb" id="thBtn">תרמי</button>
     <button class="hb" id="markBtn">סמן</button>
+    <button class="hb hidden" id="laserBtn">לייזר</button>
   </div>
   <div id="rightCol">
     <button class="hb" id="flareBtn">נוריות <b id="flareN">0</b></button>
@@ -159,6 +162,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
   </div>
   <div id="weapRow"></div>
   <button id="fireBtn">אש</button>
+  <button class="hb hidden" id="hurryBtn">זרזו את הכוח</button>
   <div id="banner" class="hidden"></div>
 </div>
 
@@ -214,7 +218,10 @@ const WEAPONS = {
   bunker: { name: 'פצצה חודרת', short: 'חודרת', cls: 3, radius: 9, dmg: 320, light: 1, bdmg: 4, flight: 4.8, spread: 1.2, cd: 2.5, wt: 14, step: 1, price: 520, pack: 1,
     desc: 'חודרת לעומק והורסת פירי מנהרות ומחסנים, עם רדיוס פגיעה קטן יחסית.' },
 };
-const WORDER = ['grenade', 'gun', 'missile', 'loiter', 'bomb', 'bunker'];
+Object.assign(WEAPONS.gun, { radius: 1.3, dmg: 45, light: 0.12, spread: 1.1, cd: 0.085 });
+WEAPONS.hmg50 = { name: 'מקלע 0.5', short: '0.5', cls: 2, radius: 1.8, dmg: 95, light: 0.55, bdmg: 0.1, flight: 0.55, spread: 1.0, cd: 0.16, wt: 0.12, step: 25, price: 160, pack: 100, auto: true, big: true,
+  desc: 'מקלע כבד 12.7 מ״מ: הורג בבטחה, פוגע גם ברכבים קלים ובמשגרים. כל כדור שוקל יותר.' };
+const WORDER = ['grenade', 'gun', 'hmg50', 'missile', 'loiter', 'bomb', 'bunker'];
 
 const DRONES = {
   wasp: { name: 'צרעה', type: 'רחפן סיור קטן', cls: 1, pay: 14, hp: 60, speed: 30, orbit: 110, sensor: 400, price: 0, repair: 250, stealth: 1,
@@ -226,7 +233,17 @@ const DRONES = {
   shadow: { name: 'צל', type: 'מזל״ט חמקן', cls: 3, pay: 80, hp: 150, speed: 52, orbit: 200, sensor: 650, price: 26000, repair: 2200, stealth: 0.55, autoFlare: true,
     desc: 'קשה לגלות ולפגוע בו, נוריות אוטומטיות והמטען הגדול ביותר.' },
 };
-const DORDER = ['wasp', 'hawk', 'eagle', 'shadow'];
+Object.assign(DRONES, {
+  kite: { name: 'שחף', type: 'רחפן סיור מהיר', cls: 1, pay: 10, hp: 45, speed: 44, orbit: 120, sensor: 560, price: 1800, repair: 200, stealth: 0.85,
+    desc: 'קל ומהיר עם חיישן לטווח ארוך וקשה יותר לגלות אותו. נושא מעט — מעולה למעקב ולסיור.' },
+  viper: { name: 'פתן', type: 'רחפן תקיפה משוריין', cls: 2, pay: 44, hp: 140, speed: 34, orbit: 150, sensor: 480, price: 7500, repair: 850, stealth: 1,
+    desc: 'מיגון כבד ומטען גדול לרחפן תקיפה. מצוין לסיוע צמוד לכוחות ולמקלעים.' },
+  thunder: { name: 'רעם', type: 'מפציץ כבד', cls: 3, pay: 110, hp: 220, speed: 34, orbit: 210, sensor: 540, price: 19000, repair: 1800, stealth: 1.15,
+    desc: 'נושא הרבה פצצות. גדול ואיטי, ולכן קל יותר לגלות אותו ולפגוע בו.' },
+  phantom: { name: 'רפאים', type: 'מזל״ט חמקן מתקדם', cls: 3, pay: 100, hp: 200, speed: 62, orbit: 210, sensor: 760, price: 42000, repair: 3200, stealth: 0.4, autoFlare: true,
+    desc: 'הטוב ביותר: כמעט בלתי נראה, מהיר, מטען גדול, חיישן לטווח ארוך ונוריות אוטומטיות.' },
+});
+const DORDER = ['wasp', 'kite', 'hawk', 'viper', 'eagle', 'thunder', 'shadow', 'phantom'];
 
 const UPGRADES = [
   { id: 'zoom', cat: 'sensor', name: 'זום אופטי', desc: 'הגדלה מרבית של המצלמה. זום גבוה מאפשר לזהות נשק מגובה.', levels: [{ v: 8 }, { v: 12, price: 1500 }, { v: 20, price: 4500 }], show: v => 'x' + v },
@@ -250,7 +267,12 @@ const MTYPES = {
   rescue: { name: 'חילוץ חטופים', icon: '⚑', base: 1150, desc: 'אתרו את הבניין שבו מוחזקים החטופים, נטרלו שומרים בלי לפגוע בבניין, וליוו את הכוח למסוק.' },
   recon: { name: 'סיור ומעקב', icon: '◎', base: 650, desc: 'עקבו אחרי רכב חשוד בלי לאבד אותו, וסמנו את החמושים שהוא פוגש בדרך.' },
 };
-const MORDER = ['strike', 'cas', 'rescue', 'recon'];
+Object.assign(MTYPES, {
+  convoy: { name: 'יירוט שיירה', icon: '⇶', base: 900, desc: 'שיירת נשק בדרך לגבול הגזרה. עצרו את כל הרכבים לפני שיברחו — בלי לפגוע ברכבים אזרחיים.' },
+  defend: { name: 'הגנה על מוצב', icon: '⌂', base: 950, desc: 'מוצב של כוחותינו מותקף מכמה כיוונים. חסלו את החוליות לפני שהן מגיעות, והחזיקו מעמד עד שמגיעה תגבורת.' },
+  launch: { name: 'ציד משגרים', icon: '⇡', base: 880, desc: 'משגרי רקטות מוסתרים יורים מדי פעם. כל שיגור חושף את האזור — מצאו והשמידו אותם לפני שיספיקו לירות שוב.' },
+});
+const MORDER = ['strike', 'cas', 'rescue', 'recon', 'convoy', 'defend', 'launch'];
 const DIFFS = [
   { name: 'קל', mult: 1, time: 1.3, en: 0.7, aa: 0, acc: 0.6, force: 'מעט' },
   { name: 'בינוני', mult: 1.6, time: 1.12, en: 1, aa: 1, acc: 0.8, force: 'בינוני' },
@@ -319,6 +341,7 @@ const SFX = {
   launch() { nz(0.9, 500, 2600, 'bandpass', 0.22, 2); },
   crack() { nz(0.14, 3800, 900, 'bandpass', 0.35, 1.2); },
   drop() { tone(900, 0.3, 'sine', 0.05, 0, 300); },
+  gun50() { const c = AU.ctx; if (!c) return; if (c.currentTime - AU.gunT < 0.08) return; AU.gunT = c.currentTime; nz(0.14, 1500, 250, 'lowpass', 0.45, 1); tone(85, 0.1, 'sine', 0.25, 0, 50); },
   gun() { const c = AU.ctx; if (!c) return; if (c.currentTime - AU.gunT < 0.05) return; AU.gunT = c.currentTime; nz(0.07, 3200, 900, 'bandpass', 0.22, 1.4); },
   far() { const c = AU.ctx; if (!c) return; if (c.currentTime - AU.gunT < 0.12) return; AU.gunT = c.currentTime; nz(0.05, 1800, 700, 'bandpass', 0.06, 1.2); },
   click() { tone(1300, 0.05, 'square', 0.05); },
@@ -358,13 +381,13 @@ const ZONES = {
   iran: { name: 'איראן', desc: 'מדבר, מפעלים ובסיסי טילים', style: 'open', aa: 0.65, aaAcc: 0.85, threat: 'בינוני', sp: 200, jit: 18, rem: 0.3, cores: 2, coreR: [170, 220], base: 0, ground: [186, 174, 150], hill: 0.6, civ: 22, cars: 8, floors: [1, 2], ruin: 0, craters: 0, industry: 0.4, bcol: ['#c4b9a2', '#b3a88f', '#d0c6b0', '#a59a82', '#9ba3a8'], tree: '#646a48' },
 };
 const ZORDER = ['gaza', 'lebanon', 'yemen', 'iran'];
-const REGION_TYPES = { gaza: ['strike', 'cas', 'rescue', 'recon'], lebanon: ['strike', 'cas', 'recon', 'rescue'], yemen: ['strike', 'recon', 'cas'], iran: ['strike', 'recon', 'strike'] };
+const REGION_TYPES = { gaza: ['strike', 'cas', 'rescue', 'recon', 'defend', 'launch'], lebanon: ['strike', 'cas', 'recon', 'rescue', 'launch', 'convoy', 'defend'], yemen: ['strike', 'recon', 'cas', 'convoy', 'launch'], iran: ['strike', 'recon', 'convoy', 'launch'] };
 const REGION_KINDS = { gaza: ['launcher', 'launcher', 'cache', 'technical', 'shaft', 'shaft', 'depot'], lebanon: ['launcher', 'launcher', 'cache', 'technical', 'depot', 'shaft'], yemen: ['launcher', 'uav', 'uav', 'tel', 'technical', 'cache'], iran: ['tel', 'tel', 'tel', 'factory', 'factory', 'uav'] };
 const CAMPAIGN = {
-  gaza: { stages: [{ type: 'strike', diff: 0, name: 'מנהרות הגבול' }, { type: 'cas', diff: 1, name: 'כניסה לשכונה' }, { type: 'recon', diff: 1, name: 'מעקב אחרי מפקד' }, { type: 'rescue', diff: 2, name: 'הבית עם הדלת הכחולה' }, { type: 'strike', diff: 3, name: 'מפקדת החטיבה' }] },
-  lebanon: { need: ['gaza', 3], stages: [{ type: 'strike', diff: 1, name: 'משגרים בסבך' }, { type: 'recon', diff: 1, name: 'שיירת הנשק' }, { type: 'cas', diff: 2, name: 'הרכס' }, { type: 'strike', diff: 3, name: 'מחסני הכפר' }, { type: 'rescue', diff: 3, name: 'חילוץ מהכפר' }] },
-  yemen: { need: ['lebanon', 3], stages: [{ type: 'strike', diff: 1, name: 'אתר הכטב״מים' }, { type: 'recon', diff: 2, name: 'המשאית מהנמל' }, { type: 'strike', diff: 2, name: 'משגרי הטילים' }, { type: 'cas', diff: 3, name: 'נחיתה בוואדי' }, { type: 'strike', diff: 3, name: 'הר המשגרים' }] },
-  iran: { need: ['yemen', 3], stages: [{ type: 'recon', diff: 2, name: 'בעקבות המשגר' }, { type: 'strike', diff: 2, name: 'בסיס הטילים' }, { type: 'strike', diff: 3, name: 'מפעל הדלק המוצק' }, { type: 'strike', diff: 4, name: 'מערך השיגור' }, { type: 'strike', diff: 4, name: 'המכה האחרונה' }] },
+  gaza: { stages: [{ type: 'strike', diff: 0, name: 'מנהרות הגבול' }, { type: 'cas', diff: 1, name: 'כניסה לשכונה' }, { type: 'launch', diff: 1, name: 'ציד המשגרים' }, { type: 'rescue', diff: 2, name: 'הבית עם הדלת הכחולה' }, { type: 'defend', diff: 3, name: 'המוצב בקו' }] },
+  lebanon: { need: ['gaza', 3], stages: [{ type: 'launch', diff: 1, name: 'משגרים בסבך' }, { type: 'convoy', diff: 1, name: 'שיירת הנשק' }, { type: 'cas', diff: 2, name: 'הרכס' }, { type: 'strike', diff: 3, name: 'מחסני הכפר' }, { type: 'rescue', diff: 3, name: 'חילוץ מהכפר' }] },
+  yemen: { need: ['lebanon', 3], stages: [{ type: 'strike', diff: 1, name: 'אתר הכטב״מים' }, { type: 'convoy', diff: 2, name: 'המשאיות מהנמל' }, { type: 'launch', diff: 2, name: 'משגרי ההר' }, { type: 'cas', diff: 3, name: 'נחיתה בוואדי' }, { type: 'strike', diff: 3, name: 'הר המשגרים' }] },
+  iran: { need: ['yemen', 3], stages: [{ type: 'recon', diff: 2, name: 'בעקבות המשגר' }, { type: 'strike', diff: 2, name: 'בסיס הטילים' }, { type: 'convoy', diff: 3, name: 'שיירת הטילים' }, { type: 'strike', diff: 4, name: 'מערך השיגור' }, { type: 'launch', diff: 4, name: 'המכה האחרונה' }] },
 };
 const CAMP_MULT = 1.5, CAMP_BONUS = 4000;
 const regionOpen = r => { const n = CAMPAIGN[r].need; return !n || (S && S.camp[n[0]] >= n[1]); };
@@ -704,7 +727,7 @@ function ruinBuilding(b) {
    משחק: ישויות, תנועה, ירי, פיצוצים ומשימות
    ===================================================================== */
 let M = null, drone = null;
-let ents = [], shots = [], emiss = [], rockets = [], parts = [], decals = [], tracers = [], squads = [], helis = [], timers = [];
+let flyers = [], ents = [], shots = [], emiss = [], rockets = [], parts = [], decals = [], tracers = [], squads = [], helis = [], timers = [];
 const FR = [];             // כוחות ידידותיים גלויים (מטרות לאויב)
 let EID = 1;
 const cam = { x: WORLD / 2, y: WORLD / 2, z: 2, zt: 2, slew: null };
@@ -743,6 +766,7 @@ function mkS(role, x, y, o) {
 }
 function label(e) {
   if (e.role === 'contact') return e.armed ? (e.gun === 'pistol' ? 'איש קשר עם אקדח' : 'איש קשר חמוש') : 'איש קשר (לא חמוש)';
+  if (e.convoy) return e.role === 'truck' ? 'משאית נשק' : 'טנדר ליווי';
   if (e.k === 'p' && e.side === 'enemy' && !e.armed) return 'חשוד לא חמוש';
   if (e.k === 'p' && e.side === 'enemy' && e.gun === 'pistol' && e.role !== 'contact') return 'חמוש באקדח';
   return { civ: 'אזרח', rifle: 'חמוש', guard: 'חמוש', rpg: 'נושא RPG', manpads: 'טיל כתף!', soldier: 'כוחותינו', hostage: 'חטוף', car: 'רכב אזרחי', technical: 'טנדר חמוש', truck: 'משאית',
@@ -899,7 +923,7 @@ function updFear(e, dt) { // מחזיר true אם האדם עסוק עכשיו �
       e.t -= dt; if (chance(dt * 1.5)) e.ang += rnd(-2, 2);
       if (e.t <= 0 && !(e.fear > 0)) {
         if (e.side === 'civ') { const q = WD.nearestRoad(e.x, e.y); if (q) { e.na = q.na; e.nb = q.nb; e.t = q.t; e.off = (chance(.5) ? 1 : -1) * rnd(4.6, 6); const rp = roadPos(e); e.tx = rp.x; e.ty = rp.y; e.st = 'toroad'; e.path = null; } else { e.st = 'stand'; e.t = 5; } }
-        else if (e.huntSq && squadLead(e.huntSq)) { e.st = 'hunt'; e.path = null; }
+        else if ((e.huntSq && squadLead(e.huntSq)) || e.huntPt) { e.st = 'hunt'; e.path = null; }
         else { e.st = 'move'; e.tx = e.hx; e.ty = e.hy; e.path = null; }
       }
       return e.side === 'civ';
@@ -948,7 +972,7 @@ function updEnemy(e, dt) {
     }
     case 'go': if (walkTo(e, e.tx, e.ty, 3.4, dt)) { if (e.tb && !e.tb.ruined) enter(e, e.tb, e.inDur || rnd(8, 18)); else e.st = 'post'; } break;
     case 'hunt': {
-      const L = e.huntSq && squadLead(e.huntSq);
+      const L = e.huntSq ? squadLead(e.huntSq) : e.huntPt;
       if (!L) { e.st = 'post'; break; }
       if (dist(e.x, e.y, L.x, L.y) > Math.max(40, R0 * 0.8)) walkTo(e, L.x, L.y, 2.8, dt, true); else { e.st = 'post'; e.hx = e.x; e.hy = e.y; }
       break;
@@ -997,7 +1021,7 @@ function updVeh(e, dt) {
       if (e.stopT !== undefined) { e.stopT -= dt; if (e.stopT <= 0) { e.stopT = undefined; e.st = 'drive'; if (e.onGo) e.onGo(e); } }
       break;
     case 'hunt': {
-      const L = e.huntSq && squadLead(e.huntSq);
+      const L = e.huntSq ? squadLead(e.huntSq) : e.huntPt;
       e.spd = Math.min(e.vmax, (e.spd || 0) + dt * 5);
       if (L && dist(e.x, e.y, L.x, L.y) < 115) { e.st = 'fight'; break; }
       stepRoad(e, dt, e.spd);
@@ -1020,8 +1044,8 @@ function updVeh(e, dt) {
   }
 }
 function reHunt(v) {
-  if (!v.huntSq || (v.rhT && M.t < v.rhT)) return; v.rhT = M.t + 5;
-  const L = squadLead(v.huntSq); if (!L) return;
+  if ((!v.huntSq && !v.huntPt) || (v.rhT && M.t < v.rhT)) return; v.rhT = M.t + 5;
+  const L = v.huntSq ? squadLead(v.huntSq) : v.huntPt; if (!L) return;
   const a = WD.nodeNear(v.x, v.y), b = WD.nodeNear(L.x, L.y); if (a === b) return;
   const r = WD.route(a, b); if (r && r.length > 1) { setRoute(v, r); v.st = 'hunt'; }
 }
@@ -1064,24 +1088,27 @@ function updSquad(sq, dt) {
     if (sq.halt) { sq.haltT += dt; if (sq.haltT > 25 && sq.state === 'move') { sq.halt = false; sq.push = 12; radio(`כוח ׳${sq.name}׳: לא יכולים להישאר כאן — מתקדמים תחת אש!`, 'friend', true); } }
   } else { sq.quiet += dt; if (sq.halt && sq.quiet > 2.5) { sq.halt = false; if (sq.state === 'move') radio(`כוח ׳${sq.name}׳: ממשיכים בתנועה`, 'friend'); } }
   if (sq.push > 0) sq.push -= dt;
-  if (sq.state === 'move' && !sq.halt) { sq.prog = Math.min(sq.total, sq.prog + sq.spd * dt); if (sq.prog >= sq.total) { sq.state = 'arrived'; if (sq.onArrive) sq.onArrive(sq); } }
+  if (sq.hurry > 0) sq.hurry -= dt;
+  const spd = sq.spd * (sq.hurry > 0 ? 1.8 : 1);
+  if (sq.state === 'move' && !sq.halt) { sq.prog = Math.min(sq.total, sq.prog + spd * dt); if (sq.prog >= sq.total) { sq.state = 'arrived'; if (sq.onArrive) sq.onArrive(sq); } }
   const col = sq.mem.filter(m => m.alive && !m.inside).concat(sq.hos.filter(h => h.alive && !h.inside));
   col.forEach((m, k) => {
     m.moving = false; m.cover = sq.halt || sq.state !== 'move';
     const p = pathAt(sq, sq.prog - k * 3.2), side = (k % 2 ? 1 : -1) * (sq.halt || sq.state !== 'move' ? 2.8 : 1.1);
     const tx = p.x + Math.cos(p.ang + Math.PI / 2) * side, ty = p.y + Math.sin(p.ang + Math.PI / 2) * side;
-    moveTo(m, tx, ty, Math.max(sq.spd * 1.5, m.side === 'hostage' ? 3.6 : 4.8), dt);
+    m.run = sq.hurry > 0; moveTo(m, tx, ty, Math.max(spd * 1.5, m.side === 'hostage' ? 3.6 : 4.8), dt);
   });
-  for (const m of sq.mem) {
-    if (!m.alive || m.inside) continue;
-    m.cd -= dt; if (m.cd > 0) continue;
-    m.cd = rnd(0.9, 1.8);
-    const en = nearestEnemy(m.x, m.y, 110);
-    if (en) {
-      m.ang = Math.atan2(en.y - m.y, en.x - m.x); muzzle(m.x, m.y, m.ang);
-      tracer(m.x, m.y, en.x + gauss() * 2, en.y + gauss() * 2, 'f');
-      if (chance(en.k === 'p' ? 0.14 : 0.07)) damage(en, 40, 'friend');
-    }
+  for (const m of sq.mem) friendFire(m, dt);
+}
+function friendFire(m, dt) {
+  if (!m.alive || m.inside) return;
+  m.cd -= dt; if (m.cd > 0) return;
+  m.cd = rnd(0.9, 1.8);
+  const en = nearestEnemy(m.x, m.y, 110);
+  if (en) {
+    m.ang = Math.atan2(en.y - m.y, en.x - m.x); muzzle(m.x, m.y, m.ang);
+    tracer(m.x, m.y, en.x + gauss() * 2, en.y + gauss() * 2, 'f');
+    if (chance(en.k === 'p' ? 0.14 : 0.07)) damage(en, 40, 'friend');
   }
 }
 function spawnHunters(sq, n, msg) {
@@ -1101,6 +1128,18 @@ function spawnTechnical(sq, msg) {
   radio(msg || `כוח ׳${sq.name}׳: טנדר חמוש מתקרב אלינו!`, 'friend', true);
   return v;
 }
+function spawnTechnicalTo(pt, msg) { // טנדר חמוש שנוסע אל נקודה ותוקף משם
+  let s = -1;
+  for (let t = 0; t < 100; t++) { const k = WD.randNode(40), N = WD.nodes[k], d = dist(N.x, N.y, pt.x, pt.y); if (d > 260 && d < 430) { s = k; break; } }
+  if (s < 0) return null;
+  const r = WD.route(s, WD.nodeNear(pt.x, pt.y)); if (!r || r.length < 2) return null;
+  const v = mkV('enemy', 'technical', 0, 0, { st: 'hunt', huntPt: { x: pt.x, y: pt.y }, aa: M.Df.aa > 0 && R() < ZONES[M.zone].aa, vmax: 12, off: 2.6 });
+  setRoute(v, r); const p = roadPos(v); v.x = p.x; v.y = p.y; v.ang = p.ang;
+  if (msg) radio(msg, 'bad', true);
+  return v;
+}
+const DIRS = ['מזרח', 'דרום־מזרח', 'דרום', 'דרום־מערב', 'מערב', 'צפון־מערב', 'צפון', 'צפון־מזרח'];
+const dirName = a => DIRS[((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8];
 function spawnHeli(p, cb) { const a = rnd(TAU); helis.push({ x: p.x + Math.cos(a) * 520, y: p.y + Math.sin(a) * 520, tx: p.x, ty: p.y, st: 'in', t: 0, rot: 0, ang: a + Math.PI, cb }); }
 function updHelis(dt) {
   for (const h of helis) {
@@ -1203,7 +1242,7 @@ function kill(e, src) {
 }
 function explode(x, y, Rr, dmg, o) {
   o = o || {}; const src = o.src || 'player', bd = o.bdmg === undefined ? 1 : o.bdmg, lt = o.light === undefined ? 1 : o.light;
-  if (o.small) fxPuff(x, y); else fxExplosion(x, y, Rr, false, o.fx);
+  if (o.small) fxPuff(x, y, o.big); else fxExplosion(x, y, Rr, false, o.fx);
   const ruined = [];
   for (const b of WD.bNear(x, y, Rr)) {
     if (b.ruined) continue;
@@ -1268,9 +1307,11 @@ function fxExplosion(x, y, Rr, quiet, kind) {
   if (vis) { const k = () => { shake = Math.min(1.4, shake + Rr / 14); flashT = Math.max(flashT, Math.min(0.3, Rr / 55)); }; if (d0) later(d0, k); else k(); }
   trimParts();
 }
-function fxPuff(x, y) {
-  for (let i = 0; i < 3; i++) parts.push({ k: 'smoke', c: 'u', x: x + gauss() * 0.5, y: y + gauss() * 0.5, vx: gauss() * 3, vy: gauss() * 3, r: rnd(0.4, 0.8), gr: 1.2, t: 0, life: rnd(0.6, 1.3), a: 0.6, drag: 4 });
-  for (let i = 0; i < 2; i++) { const a = rnd(TAU); parts.push({ k: 'spark', x, y, vx: Math.cos(a) * 25, vy: Math.sin(a) * 25, t: 0, life: 0.08, drag: 2 }); }
+function fxPuff(x, y, big) { // פגיעת כדור: אבק שניתז, ניצוצות, ובכבד גם רסיסי קרקע
+  const k = big ? 2 : 1;
+  for (let i = 0; i < 3 * k; i++) parts.push({ k: 'smoke', c: 'u', x: x + gauss() * 0.5 * k, y: y + gauss() * 0.5 * k, vx: gauss() * 3 * k, vy: gauss() * 3 * k, r: rnd(0.4, 0.8) * k, gr: 1.2 * k, t: 0, life: rnd(0.6, 1.3) * k, a: 0.6, drag: 4 });
+  for (let i = 0; i < 2 * k; i++) { const a = rnd(TAU); parts.push({ k: 'spark', x, y, vx: Math.cos(a) * 25 * k, vy: Math.sin(a) * 25 * k, t: 0, life: 0.08 * k, drag: 2 }); }
+  if (big) { for (let i = 0; i < 3; i++) { const a = rnd(TAU), sp = rnd(4, 9); parts.push({ k: 'debris', x, y, z: 0.3, vz: rnd(4, 9), vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, s: 0.3, t: 0, life: 1.4, drag: 0.6, dirt: true }); } decals.push({ x, y, r: 0.7, t: 0 }); if (decals.length > 90) decals.shift(); }
   trimParts();
 }
 function fxDust(b) {
@@ -1302,6 +1343,11 @@ function updParts(dt) {
   }
   parts.length = j; for (const q of add) parts.push(q);
   j = 0; for (let i = 0; i < tracers.length; i++) { const t = tracers[i]; t.t += dt; if (t.t < t.life) tracers[j++] = t; } tracers.length = j;
+}
+function updFlyers(dt) {
+  for (let i = flyers.length - 1; i >= 0; i--) { const f = flyers[i]; f.t += dt; f.vx *= 1 + dt * 0.6; f.vy *= 1 + dt * 0.6; f.x += f.vx * dt; f.y += f.vy * dt;
+    if (chance(dt * 40)) parts.push({ k: 'trail', x: f.x, y: f.y, vx: 0, vy: 0, r: 0.9, gr: 1.6, t: 0, life: 5, a: 0.55 });
+    if (f.t > 4) flyers.splice(i, 1); }
 }
 function updRockets(dt) {
   for (let i = rockets.length - 1; i >= 0; i--) {
@@ -1337,11 +1383,17 @@ function fire(auto) {
     if (dc && performance.now() - confirmAt > 2500) { confirmAt = performance.now(); radio(`זהירות: ${dc} בטווח הפגיעה! לחצו שוב לאישור`, 'bad'); SFX.alarm(); return; }
   }
   confirmAt = 0;
-  const lock = canTrack(s.w) ? lockCandidate() : null;
+  const lz = M.laser && M.laser.alive && !W.auto && s.w !== 'grenade';
+  const lock = lz ? M.laser : canTrack(s.w) ? lockCandidate() : null;
   const T = W.flight * (drone.altF < 0.85 ? 1.4 : 1);
-  shots.push({ w: s.w, W, x: a.x, y: a.y, lock, t: T, T });
+  const sh = { w: s.w, W, x: a.x, y: a.y, lock, t: T, T };
+  if (W.auto) { // מקלע: פיזור שגדל באש רציפה, נותב כל כדור שלישי, ופרץ קצר בלחיצה
+    M.heat = Math.min(1, (M.heat || 0) + (W.big ? 0.09 : 0.05)); sh.spm = 1 + 1.6 * M.heat; M.shotN = (M.shotN || 0) + 1; sh.tr = M.shotN % 3 === 0;
+    if (!auto) M.burst = W.big ? 4 : 6; else if (M.burst > 0) M.burst--;
+  }
+  shots.push(sh);
   s.n--; fireCd = W.cd; M.stats.used[s.w] = (M.stats.used[s.w] || 0) + 1;
-  if (W.auto) SFX.gun(); else if (s.w === 'grenade') SFX.drop(); else SFX.launch();
+  if (W.auto) (W.big ? SFX.gun50 : SFX.gun)(); else if (s.w === 'grenade') SFX.drop(); else SFX.launch();
   if (lock && !W.auto) SFX.lock();
   updWeapRow();
 }
@@ -1370,9 +1422,9 @@ function updShots(dt) {
   }
 }
 function impact(s) {
-  const W = s.W; let sp = W.spread * (s.air ? 1 : upv('stab')) * (drone && drone.altF < 0.85 && !s.air ? 1.3 : 1); if (s.lock) sp *= 0.3;
+  const W = s.W; let sp = W.spread * (s.spm || 1) * (s.air ? 1 : upv('stab')) * (drone && drone.altF < 0.85 && !s.air ? 1.3 : 1); if (s.lock) sp *= 0.3;
   const x = s.x + gauss() * sp, y = s.y + gauss() * sp;
-  explode(x, y, W.radius, W.dmg, { src: 'player', bdmg: W.bdmg, light: W.light, small: W.radius <= 2, fx: s.air ? 'air' : s.w === 'loiter' ? 'missile' : s.w });
+  explode(x, y, W.radius, W.dmg, { src: 'player', bdmg: W.bdmg, light: W.light, small: !!W.auto, big: !!W.big, fx: s.air ? 'air' : s.w === 'loiter' ? 'missile' : s.w });
 }
 
 /* ---------- סימון וזיהוי ---------- */
@@ -1528,7 +1580,7 @@ MIS.cas = {
       best = pts;
     }
     if (!best) { const a = WD.randNode(140), b = WD.randNode(140); best = routePts(WD.route(a, b) || [a, b], 3.2); }
-    const sq = mkSquad(best, 6, 'נמר', 7.5); M.sq = sq; M.focus = { x: best[0].x, y: best[0].y };
+    const sq = mkSquad(best, 6, 'נמר', 9); M.sq = sq; M.focus = { x: best[0].x, y: best[0].y };
     const mid = pathAt(sq, sq.total / 2); M.area = mid;
     const k = 2 + M.diff;
     for (let i = 0; i < k; i++) {
@@ -1615,7 +1667,7 @@ MIS.rescue = {
     if (s < 0) s = WD.randNode(60);
     const tn = WD.nodeNear(hc.x, hc.y), r = WD.route(s, tn) || [s, tn], pts = routePts(r, 3.2);
     pts.push(boundaryToward(H, pts[pts.length - 1].x, pts[pts.length - 1].y));
-    const sq = mkSquad(pts, 6, 'ברק', 7); M.sq = sq; M.phase = 'approach';
+    const sq = mkSquad(pts, 6, 'ברק', 8.5); M.sq = sq; M.phase = 'approach';
     const add = (sq.total / sq.spd * 1.6 + 60) * upv('battery'); M.timeLeft += add; M.total += add;
     radio(`נוספו ${Math.round(add)} שניות לליווי הכוח`, 'good');
     sq.onArrive = () => { M.breachWait = true; };
@@ -1651,7 +1703,7 @@ MIS.rescue = {
     M.lz = lz;
     const a = WD.nodeNear(hc.x, hc.y), b = WD.nodeNear(lz.x, lz.y), r = WD.route(a, b) || [a, b];
     const pts = [boundaryToward(H, WD.nodes[a].x, WD.nodes[a].y), ...routePts(r, 3.2), { x: lz.x, y: lz.y }];
-    setSquadPath(sq, pts); sq.spd = 6; sq.onArrive = null;
+    setSquadPath(sq, pts); sq.spd = 7.5; sq.onArrive = null;
     const add = (sq.total / sq.spd * 1.6 + 50) * upv('battery'); M.timeLeft += add; M.total += add;
     sq.mem.forEach(m => { if (m.alive && m.inside) { m.inside = null; m.stay = false; m.x = pts[0].x + rnd(-1, 1); m.y = pts[0].y + rnd(-1, 1); m.st = 'idle'; } });
     for (const h of ents) if (h.side === 'hostage' && h.alive) { h.inside = null; h.stay = false; h.x = pts[0].x + rnd(-1, 1); h.y = pts[0].y + rnd(-1, 1); h.st = 'idle'; sq.hos.push(h); }
@@ -1744,10 +1796,134 @@ MIS.recon = {
   },
 };
 
+/* ----- יירוט שיירה ----- */
+MIS.convoy = {
+  setup() {
+    const exits = WD.nodes.map((n, k) => k).filter(k => { const n = WD.nodes[k]; return n.comp && Math.min(n.x, n.y, WORLD - n.x, WORLD - n.y) < 130; });
+    let r = null;
+    for (let t = 0; t < 120 && !r; t++) {
+      const a = WD.randNode(250), b = pick(exits), A = WD.nodes[a], B = WD.nodes[b], d = dist(A.x, A.y, B.x, B.y);
+      if (d < 600 || d > 1150) continue; const rr = WD.route(a, b); if (rr && rr.length > 5) r = rr;
+    }
+    if (!r) r = WD.route(WD.randNode(250), pick(exits)) || [WD.randNode(200), WD.randNode(200)];
+    const n = 3 + Math.floor(M.diff / 1.5); M.convoy = []; M.escaped = 0; M.allowEsc = M.diff <= 1 ? 1 : 0;
+    for (let i = 0; i < n; i++) {
+      const role = i === 0 || (i === n - 1 && M.diff >= 1) ? 'technical' : 'truck';
+      const v = mkV('enemy', role, 0, 0, { st: 'stop', stopT: 3 + i * 2.4, vmax: 8.5, convoy: true, marked: true, off: 2.6, aa: role === 'technical' && M.Df.aa > 0 && R() < ZONES[M.zone].aa });
+      v.armed = role === 'technical'; if (role === 'truck') { v.hp = v.mhp = 160; }
+      setRoute(v, r.slice());
+      for (let adv = (n - 1 - i) * 24; adv > 0; adv -= 2) stepRoad(v, 0.2, 10); // טור: המוביל מקדימה, וכל רכב 24 מטר מאחוריו
+      const p = roadPos(v); v.x = p.x; v.y = p.y; v.ang = p.ang; v.stopT = 3;
+      v.onEnd = () => { if (v.alive && !M.over) { v.gone = true; v.alive = false; M.escaped++; radio('רכב מהשיירה ברח מהגזרה!', 'bad', true); } };
+      M.convoy.push(v);
+    }
+    const len = polyCum(r.map(k => WD.nodes[k])).pop();
+    const mid = WD.nodes[r[Math.floor(r.length / 2)]]; placeAA(mid.x, mid.y, 260);
+    M.focus = { x: M.convoy[0].x, y: M.convoy[0].y }; M.area = M.focus;
+    M.timeLeft = (len / 8.5 + n * 2.4 + 40) * 1.3 * upv('battery');
+    M.objs = [{ id: 'kill', text: `השמידו את השיירה (0/${n})` }, { id: 'esc', text: M.allowEsc ? `מותר שיברח לכל היותר רכב אחד` : 'אסור שאף רכב יברח' }, { id: 'clean', text: 'בונוס: בלי פגיעה באזרחים', opt: true }];
+    M.intro = 'שיירת נשק (מסומנת בצהוב) נוסעת אל גבול הגזרה, וטנדרים חמושים מלווים אותה. השמידו את כל הרכבים לפני שיברחו. הרחפן עוקב אחרי השיירה לבד.';
+  },
+  update() {
+    const n = M.convoy.length, dead = M.convoy.filter(v => !v.alive && !v.gone).length, o = M.objs.find(o => o.id === 'kill'), txt = `השמידו את השיירה (${dead}/${n})`;
+    if (o.text !== txt) { o.text = txt; renderObjs(); }
+    if (M.escaped > M.allowEsc) { setObj('esc', { fail: true }); return endMission(false, 'השיירה ברחה מהגזרה'); }
+    if (M.convoy.every(v => !v.alive)) {
+      setObj('kill', { done: true }); setObj('esc', { done: true });
+      if (M.stats.civ === 0) { setObj('clean', { done: true }); M.bonus.push({ text: 'בלי פגיעה באזרחים', f: 0.15 }); }
+      if (!M.escaped) M.bonus.push({ text: 'אף רכב לא ברח', f: 0.2 });
+      endMission(true);
+    }
+  },
+};
+
+/* ----- הגנה על מוצב ----- */
+MIS.defend = {
+  setup() {
+    let c = null;
+    for (let t = 0; t < 80 && !c; t++) { const a = WD.findArea(0.1, 0.8, 320), q = WD.openSpot(a.x, a.y, 90, 9); if (!WD.bNear(q.x, q.y, 12).length && WD.inside(q.x, q.y, 300)) c = q; }
+    c = c || WD.openSpot(WORLD / 2, WORLD / 2, 200, 9);
+    M.post = { x: c.x, y: c.y, mem: [] }; M.area = c; M.focus = c;
+    for (let i = 0; i < 6; i++) { const a = i / 6 * TAU; M.post.mem.push(mkP('friend', 'soldier', c.x + Math.cos(a) * 5, c.y + Math.sin(a) * 5, { cd: rnd(1, 2), ang: a, cover: true, st: 'post' })); }
+    M.wave = 0; M.nextWave = 8; M.maxDead = [3, 3, 2, 2, 1][M.diff];
+    placeAA(c.x, c.y, 260);
+    M.timeLeft = (100 + M.diff * 25); M.holdWin = true;
+    M.objs = [{ id: 'hold', text: 'החזיקו מעמד עד שתגיע תגבורת' }, { id: 'loss', text: `עד ${M.maxDead} הרוגים במוצב (0)` }, { id: 'clean', text: 'בונוס: בלי פגיעה באזרחים', opt: true }];
+    M.intro = 'המוצב (חיילים כחולים בעיגול) מותקף. חוליות חמושים מגיעות מכמה כיוונים — חסלו אותן לפני שהן מגיעות. כשהשעון מגיע לאפס, התגבורת מגיעה.';
+  },
+  update(dt) {
+    for (const m of M.post.mem) friendFire(m, dt);
+    M.nextWave -= dt;
+    if (M.nextWave <= 0 && M.timeLeft > 15) {
+      M.nextWave = rnd(16, 24) * (M.diff >= 3 ? 0.8 : 1); M.wave++;
+      const c = M.post, a = rnd(TAU), n = Math.round((3 + M.diff) * Math.min(1.4, M.Df.en));
+      for (let i = 0; i < n; i++) { const r = rnd(200, 260), b = a + gauss() * 0.3, q = WD.freeSpot(c.x + Math.cos(b) * r, c.y + Math.sin(b) * r, 10); mkP('enemy', i === 0 && M.diff >= 1 ? 'rpg' : 'rifle', q.x, q.y, { st: 'hunt', huntPt: { x: c.x, y: c.y } }); }
+      if (M.diff >= 2 && M.wave % 2 === 0) spawnTechnicalTo(c, 'טנדר חמוש בדרך למוצב!');
+      radio(`גל תקיפה ${M.wave} מכיוון ${dirName(a)}!`, 'bad', true);
+    }
+    const dead = M.post.mem.filter(m => !m.alive).length, o = M.objs.find(o => o.id === 'loss'), txt = `עד ${M.maxDead} הרוגים במוצב (${dead})`;
+    if (o.text !== txt) { o.text = txt; renderObjs(); }
+    if (dead > M.maxDead) { setObj('loss', { fail: true }); return endMission(false, 'המוצב נפל'); }
+  },
+  win() {
+    setObj('hold', { done: true }); setObj('loss', { done: true }); radio('התגבורת הגיעה! המוצב החזיק מעמד', 'good', true);
+    if (M.stats.civ === 0) { setObj('clean', { done: true }); M.bonus.push({ text: 'בלי פגיעה באזרחים', f: 0.15 }); }
+    if (!M.post.mem.some(m => !m.alive)) M.bonus.push({ text: 'בלי אבדות במוצב', f: 0.2 });
+  },
+};
+
+/* ----- ציד משגרים ----- */
+MIS.launch = {
+  setup() {
+    const c = WD.findArea(0.05, 0.8, 320); M.area = c; M.focus = c;
+    const n = 3 + (M.diff >= 2 ? 1 : 0) + (M.diff >= 4 ? 1 : 0); M.targets = []; M.launchDir = rnd(TAU);
+    for (let i = 0; i < n; i++) {
+      let p = null; for (let t = 0; t < 60; t++) { const q = WD.openSpot(c.x + rnd(-230, 230), c.y + rnd(-230, 230), 20); if (WD.inside(q.x, q.y, 90) && M.targets.every(o => dist(o.x, o.y, q.x, q.y) > 80)) { p = q; break; } }
+      if (!p) continue;
+      const e = mkS('launcher', p.x, p.y, { obj: true }); e.idx = M.targets.length + 1; M.targets.push(e);
+      for (let k = rint(1, 2); k > 0; k--) { const q = WD.freeSpot(p.x + rnd(-7, 7), p.y + rnd(-7, 7), 3); mkP('enemy', 'rifle', q.x, q.y, { st: 'post' }); }
+    }
+    M.salvos = 0; M.maxSalvo = [6, 5, 5, 4, 4][M.diff]; M.nextLaunch = rnd(6, 10);
+    placeAA(c.x, c.y, 240);
+    M.timeLeft = (200 + M.targets.length * 30) * M.Df.time * upv('battery');
+    M.objs = [{ id: 'kill', text: `השמידו את המשגרים (0/${M.targets.length})` }, { id: 'salvo', text: `מטחים שנורו: 0/${M.maxSalvo}` }];
+    M.intro = 'משגרים מוסתרים יורים רקטות. כל שיגור משאיר עשן וחושף את האזור בעיגול כתום שמצטמצם בכל שיגור. השמידו את כולם לפני שיירו יותר מדי.';
+  },
+  salvo(e) {
+    const a = M.launchDir + gauss() * 0.15;
+    for (let k = 0; k < rint(3, 6); k++) later(k * 0.3, () => {
+      if (!e.alive) return; flyers.push({ x: e.x, y: e.y, vx: Math.cos(a) * 45, vy: Math.sin(a) * 45, t: 0 });
+      parts.push({ k: 'flash', x: e.x, y: e.y, r: 5, t: 0, life: 0.2 });
+      for (let i = 0; i < 6; i++) parts.push({ k: 'smoke', c: 'g', x: e.x + gauss(), y: e.y + gauss(), vx: gauss() * 5, vy: gauss() * 5, r: rnd(1.5, 3), gr: 1.8, t: 0, life: rnd(6, 12), a: 0.6 });
+      if (onScreen(e.x, e.y, 200)) SFX.launch();
+    });
+    e.shots = (e.shots || 0) + 1;
+    const r = [45, 26, 12][Math.min(2, e.shots - 1)], an = rnd(TAU), off = rnd(0, r * 0.6);
+    e.intel = { x: e.x + Math.cos(an) * off, y: e.y + Math.sin(an) * off, r };
+  },
+  update(dt) {
+    M.nextLaunch -= dt;
+    if (M.nextLaunch <= 0) {
+      const alive = M.targets.filter(e => e.alive);
+      if (alive.length) { const e = pick(alive); MIS.launch.salvo(e); M.salvos++; radio(`שיגור רקטות! (${M.salvos}/${M.maxSalvo}) — האזור סומן בכתום`, 'bad', true); }
+      M.nextLaunch = rnd(14, 22) * (M.diff >= 3 ? 0.8 : 1);
+    }
+    let left = 0;
+    M.targets.forEach((t, i) => {
+      if (t.intel && !t.revealed && t.alive && zoomEff() >= 2 && inView(t.x, t.y, 0.08)) { t.revealed = true; radio(`זוהה משגר ${i + 1} — השמידו אותו!`, 'good'); SFX.lock(); }
+      if (t.alive) left++;
+    });
+    const n = M.targets.length, ko = M.objs.find(o => o.id === 'kill'), kt = `השמידו את המשגרים (${n - left}/${n})`, so = M.objs.find(o => o.id === 'salvo'), stx = `מטחים שנורו: ${M.salvos}/${M.maxSalvo}`;
+    if (ko.text !== kt || so.text !== stx) { ko.text = kt; so.text = stx; renderObjs(); }
+    if (!left) { setObj('kill', { done: true }); setObj('salvo', { done: true }); if (M.salvos <= 2) M.bonus.push({ text: 'חוסלו לפני שהספיקו לירות', f: 0.25 }); return endMission(true); }
+    if (M.salvos >= M.maxSalvo) { setObj('salvo', { fail: true }); return endMission(false, 'המשגרים ירו יותר מדי רקטות'); }
+  },
+};
+
 /* =====================================================================
    מחזור משימה
    ===================================================================== */
-function resetWorldState() { ents = []; shots = []; emiss = []; rockets = []; parts = []; decals = []; tracers = []; squads = []; helis = []; timers = []; EID = 1; FR.length = 0; }
+function resetWorldState() { flyers = []; ents = []; shots = []; emiss = []; rockets = []; parts = []; decals = []; tracers = []; squads = []; helis = []; timers = []; EID = 1; FR.length = 0; }
 function startMission(card, diff, droneId, lo) {
   auInit();
   WD = genWorld(card.seed, card.zone);
@@ -1790,6 +1966,8 @@ function updDrone(dt) {
   const d = drone; if (d.down) return;
   d.altF += clamp((d.altHigh ? 0.6 : 1) - d.altF, -dt * 0.14, dt * 0.14);
   if (M.type === 'recon' && M.lock && M.tcar.alive) { const k = 1 - Math.exp(-dt * 0.8); d.ocx += (M.tcar.x - d.ocx) * k; d.ocy += (M.tcar.y - d.ocy) * k; }
+  if (M.manualT > 0) M.manualT -= dt;
+  if (M.type === 'convoy' && !(M.manualT > 0)) { const v = M.convoy.find(v => v.alive && !v.gone); if (v) { const k = 1 - Math.exp(-dt * 0.7); d.ocx += (v.x - d.ocx) * k; d.ocy += (v.y - d.ocy) * k; } }
   d.ang += d.speed / d.orbit * dt;
   const px = d.ocx + Math.cos(d.ang) * d.orbit, py = d.ocy + Math.sin(d.ang) * d.orbit, dx = px - d.x, dy = py - d.y, L = Math.hypot(dx, dy);
   const v = d.speed * (L > d.orbit * 0.5 ? 1.7 : 1.15) * dt;
@@ -1797,7 +1975,7 @@ function updDrone(dt) {
   d.flareT -= dt;
 }
 function setOrbit(x, y) {
-  drone.ocx = clamp(x, 0, WORLD); drone.ocy = clamp(y, 0, WORLD);
+  drone.ocx = clamp(x, 0, WORLD); drone.ocy = clamp(y, 0, WORLD); if (M) M.manualT = 15;
   orbitMode = false; $('orbitBtn').classList.remove('on'); $('banner').classList.add('hidden');
   radio('הרחפן בדרך למסלול החדש'); SFX.click();
 }
@@ -1848,16 +2026,19 @@ function update(dt) {
   M.t += dt;
   if (!M.over) {
     M.timeLeft -= dt;
-    if (M.timeLeft <= 0) { M.timeLeft = 0; if (M.endAt) endMission(true); else endMission(false, M.type === 'recon' ? 'הסוללה נגמרה' : 'נגמר הזמן'); }
+    if (M.timeLeft <= 0) { M.timeLeft = 0; if (M.holdWin) { if (MIS[M.type].win) MIS[M.type].win(); endMission(true); } else if (M.endAt) endMission(true); else endMission(false, M.type === 'recon' ? 'הסוללה נגמרה' : 'נגמר הזמן'); }
   }
   fireCd -= dt;
-  if (firing && curW() && WEAPONS[curW().w].auto) fire(true);
+  if (curW() && WEAPONS[curW().w].auto && (firing || M.burst > 0)) fire(true);
+  M.heat = Math.max(0, (M.heat || 0) - dt * 0.9);
   updDrone(dt); updCam(dt);
   updEnts(dt);
   for (const sq of squads) updSquad(sq, dt);
-  updShots(dt); updRockets(dt); updEmiss(dt); updHelis(dt); updParts(dt);
+  updShots(dt); updRockets(dt); updFlyers(dt); updEmiss(dt); updHelis(dt); updParts(dt);
   for (let i = timers.length - 1; i >= 0; i--) { if (i >= timers.length) continue; timers[i].t -= dt; if (timers[i].t <= 0) { const f = timers[i].fn; timers.splice(i, 1); f(); } }
   if (!M.over && MIS[M.type].update) MIS[M.type].update(dt);
+  if (M.hurryCd > 0) M.hurryCd -= dt;
+  if (M.laser && (!M.laser.alive || M.laser.inside || M.laser.gone || !inView(M.laser.x, M.laser.y, 0))) { M.laser = null; $('laserBtn').classList.remove('on'); radio('הסימון בלייזר אבד', 'warn'); }
   if (!M.over && M.type !== 'recon') checkAmmo(dt);
   if (upv('ai')) autoId(dt);
   staticT = Math.max(0, staticT - dt); flashT = Math.max(0, flashT - dt); shake *= Math.exp(-dt * 5);
@@ -1975,6 +2156,7 @@ function drawWorld(sc) {
     if (th) { const heat = clamp(1 - d.t / 45, 0, 1); if (heat > 0.02) { ctx.globalAlpha = heat * 0.55; ctx.drawImage(GLOW, d.x - s * 0.8, d.y - s * 0.8, s * 1.6, s * 1.6); } }
   }
   ctx.globalAlpha = 1;
+  if (M && M.post) { ctx.strokeStyle = th ? '#6a6a6a' : '#b3a07a'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(M.post.x, M.post.y, 7.5, 0.4, TAU - 0.4); ctx.stroke(); ctx.strokeStyle = th ? '#555' : '#8f7e5c'; ctx.lineWidth = 0.3; ctx.stroke(); }
   /* בניינים (אריחים גלויים בלבד) */
   const tx0 = clamp(Math.floor((x0 - 30) / TILE), 0, TN - 1), tx1 = clamp(Math.floor((x1 + 30) / TILE), 0, TN - 1);
   const ty0 = clamp(Math.floor((y0 - 30) / TILE), 0, TN - 1), ty1 = clamp(Math.floor((y1 + 30) / TILE), 0, TN - 1);
@@ -2140,6 +2322,9 @@ function drawVeh(e, th) {
       ctx.fillStyle = '#7b7460'; ctx.fillRect(-L / 2 + 0.25, -W / 2 + 0.25, L * 0.45, W - 0.5);
       ctx.fillStyle = '#1b1b1b'; ctx.beginPath(); ctx.arc(-0.9, 0, 0.5, 0, TAU); ctx.fill();
       ctx.strokeStyle = '#151515'; ctx.lineWidth = 0.25; ctx.beginPath(); ctx.moveTo(-0.9, 0); ctx.lineTo(1.3, 0); ctx.stroke();
+    } else if (e.role === 'truck') { // משאית: תא נהג וארגז מכוסה ברזנט
+      ctx.fillStyle = '#5f6150'; ctx.fillRect(-L / 2, -W / 2, L - 2.1, W);
+      ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 0.15; for (let x = -L / 2 + 0.9; x < L / 2 - 2.3; x += 1.1) { ctx.beginPath(); ctx.moveTo(x, -W / 2); ctx.lineTo(x, W / 2); ctx.stroke(); }
     } else { ctx.fillStyle = 'rgba(255,255,255,0.13)'; ctx.fillRect(-L / 2 + 1.3, -W / 2 + 0.3, L - 3, W - 0.6); ctx.fillStyle = '#20262b'; ctx.fillRect(-L / 2 + 0.45, -W / 2 + 0.3, 0.5, W - 0.6); }
     ctx.fillStyle = '#20262b'; ctx.fillRect(L / 2 - 1.75, -W / 2 + 0.25, 0.75, W - 0.5);
   }
@@ -2243,6 +2428,7 @@ function drawEmissive(sc, th, dark, inV) {
     ctx.strokeStyle = th ? 'rgba(255,255,255,0.9)' : t.kind === 'f' ? 'rgba(255,235,150,0.85)' : t.kind === 'aa' ? 'rgba(255,150,60,0.9)' : 'rgba(255,190,90,0.9)';
     ctx.lineWidth = lw; ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(hx, hy); ctx.stroke();
   }
+  for (const f of flyers) if (inV(f.x, f.y, 4)) ctx.drawImage(th ? GLOW : FIRE_HOT, f.x - 2, f.y - 2, 4, 4);
   for (const r of rockets) if (inV(r.x, r.y, 4)) ctx.drawImage(th ? GLOW : FIREG, r.x - 1.6, r.y - 1.6, 3.2, 3.2);
   for (const m of emiss) if (inV(m.x, m.y, 5)) ctx.drawImage(th ? GLOW : FIREG, m.x - 2.2, m.y - 2.2, 4.4, 4.4);
   if (dark && !th) {
@@ -2252,7 +2438,15 @@ function drawEmissive(sc, th, dark, inV) {
   }
   /* תחמושת שלנו בדרך */
   if (drone) for (const s of shots) {
-    const W = s.W; if (W.radius <= 2) continue;
+    const W = s.W;
+    if (W.auto) { // נותבים של מקלע: פס אור קצר שמגיע מכיוון הרחפן
+      if (!s.tr) continue;
+      const q = 1 - s.t / s.T, dx = s.x - drone.x, dy = s.y - drone.y, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L, far = 70 * (1 - q), px = s.x - ux * far, py = s.y - uy * far;
+      if (!inV(px, py, 12)) continue;
+      ctx.strokeStyle = th ? 'rgba(255,255,255,0.95)' : W.big ? 'rgba(255,200,120,0.95)' : 'rgba(255,225,150,0.9)'; ctx.lineWidth = Math.max(0.15, (W.big ? 1.6 : 1.1) * DPR / sc);
+      ctx.beginPath(); ctx.moveTo(px - ux * 7, py - uy * 7); ctx.lineTo(px, py); ctx.stroke(); continue;
+    }
+    if (W.radius <= 2) continue;
     if (s.w === 'grenade') { // נפילה אנכית: הרימון מתרחק מהמצלמה ומתכווץ עד הפגיעה
       if (!inV(s.x, s.y, 10)) continue;
       const q = 1 - s.t / s.T, px = DPR / sc, sz = lerp(30, 4, Math.pow(q, 0.6)) * px, wob = Math.sin(s.t * 19) * 0.25;
@@ -2276,10 +2470,11 @@ function drawEmissive(sc, th, dark, inV) {
 function drawOverlays(sc) {
   const px = DPR / sc;
   ctx.lineWidth = 1.5 * px; ctx.setLineDash([6 * px, 5 * px]);
-  if (M.type === 'strike') {
+  if (M.targets) {
     ctx.strokeStyle = 'rgba(255,180,70,0.85)';
-    for (const t of M.targets) { if (t.k === 'b' ? t.b.ruined : !t.alive) continue; ctx.beginPath(); ctx.arc(t.intel.x, t.intel.y, t.intel.r, 0, TAU); ctx.stroke(); }
+    for (const t of M.targets) { if (!t.intel || (t.k === 'b' ? t.b.ruined : !t.alive)) continue; ctx.beginPath(); ctx.arc(t.intel.x, t.intel.y, t.intel.r, 0, TAU); ctx.stroke(); }
   }
+  if (M.post) { ctx.setLineDash([]); ctx.strokeStyle = 'rgba(92,194,255,0.7)'; ctx.lineWidth = 1.5 * px; ctx.beginPath(); ctx.arc(M.post.x, M.post.y, 11, 0, TAU); ctx.stroke(); ctx.setLineDash([6 * px, 5 * px]); }
   for (const sq of squads) {
     if (sq.state !== 'move' || !squadLead(sq)) continue;
     ctx.strokeStyle = 'rgba(92,194,255,0.65)'; ctx.beginPath();
@@ -2342,8 +2537,8 @@ function drawHUD(sc) {
   const w = cv.width, h = cv.height, cx = w / 2, cy = h / 2, u = DPR, th = thermal, now = performance.now() / 1000;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   /* סימונים בעולם */
-  if (M.type === 'strike') M.targets.forEach((t, i) => {
-    if (t.k === 'b' ? t.b.ruined : !t.alive) return;
+  if (M.targets) M.targets.forEach((t, i) => {
+    if (!t.intel || (t.k === 'b' ? t.b.ruined : !t.alive)) return;
     if (t.revealed) {
       const p = w2s(t.x, t.y), q = t.k === 'b' ? Math.max(10 * u, Math.max(t.b.w, t.b.h) * sc * 0.6) : Math.max(11 * u, t.r * sc * 2);
       if (!edgeArrow(t.x, t.y, '#ffd166', 'יעד ' + (i + 1))) { brackets(p.x, p.y, q, q, q * 0.4, '#ffd166', 2); tag(`יעד ${i + 1}: ${TNAME[t.role]}`, p.x, p.y - q - 10 * u, '#ffd166', 12); }
@@ -2395,16 +2590,25 @@ function drawHUD(sc) {
     ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
     tag(s.t.toFixed(1), p.x, p.y - r - 8 * u, s.air ? '#ffb347' : '#ffd166', 10);
   }
+  if (M.laser) { // נקודת הלייזר על המטרה
+    const p = w2s(M.laser.x, M.laser.y), q = Math.max(10 * u, M.laser.r * sc * 2.1), pl = 0.6 + 0.4 * Math.sin(now * 12);
+    const dp = w2s(drone.x, drone.y), dx = dp.x - p.x, dy = dp.y - p.y, L = Math.hypot(dx, dy) || 1;
+    ctx.strokeStyle = `rgba(255,60,60,${0.35 * pl})`; ctx.lineWidth = 1.2 * u; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + dx / L * 140 * u, p.y + dy / L * 140 * u); ctx.stroke();
+    ctx.fillStyle = `rgba(255,70,70,${pl})`; ctx.beginPath(); ctx.arc(p.x, p.y, 3 * u, 0, TAU); ctx.fill();
+    ctx.strokeStyle = '#ff5a4f'; ctx.lineWidth = 1.6 * u; ctx.beginPath(); ctx.moveTo(p.x, p.y - q); ctx.lineTo(p.x + q, p.y); ctx.lineTo(p.x, p.y + q); ctx.lineTo(p.x - q, p.y); ctx.closePath(); ctx.stroke();
+    tag('לייזר', p.x, p.y + q + 9 * u, '#ff5a4f', 10);
+  }
   /* כוונת */
   const s = curW(), W = s ? WEAPONS[s.w] : null, a = aimPoint();
-  const dc = W && W.radius > 2 ? dangerClose(a.x, a.y, W.radius) : null;
+  const dc = W ? (W.auto ? dangerClose(a.x, a.y, W.spread * 2) : W.radius > 2 ? dangerClose(a.x, a.y, W.radius) : null) : null;
   const col = dc ? 'rgba(255,90,80,0.95)' : th ? 'rgba(255,255,255,0.92)' : 'rgba(205,255,220,0.92)';
   ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 1.5 * u;
   const g = 9 * u, L = 34 * u;
   ctx.beginPath(); ctx.moveTo(cx - L, cy); ctx.lineTo(cx - g, cy); ctx.moveTo(cx + g, cy); ctx.lineTo(cx + L, cy); ctx.moveTo(cx, cy - L); ctx.lineTo(cx, cy - g); ctx.moveTo(cx, cy + g); ctx.lineTo(cx, cy + L); ctx.stroke();
   ctx.fillRect(cx - u, cy - u, 2 * u, 2 * u);
   brackets(cx, cy, 64 * u, 46 * u, 12 * u, col, 1.2);
-  if (W && W.radius * sc > 6 * u) { ctx.strokeStyle = dc ? 'rgba(255,90,80,0.8)' : 'rgba(255,255,255,0.35)'; ctx.setLineDash([4 * u, 4 * u]); ctx.lineWidth = u; ctx.beginPath(); ctx.arc(cx, cy, W.radius * sc, 0, TAU); ctx.stroke(); ctx.setLineDash([]); }
+  if (W && W.auto) { const r = W.spread * (1 + 1.6 * (M.heat || 0)) * upv('stab') * (drone.altF < 0.85 ? 1.3 : 1) * sc; if (r > 4 * u) { ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.setLineDash([2 * u, 3 * u]); ctx.lineWidth = u; ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke(); ctx.setLineDash([]); } }
+  else if (W && W.radius * sc > 6 * u) { ctx.strokeStyle = dc ? 'rgba(255,90,80,0.8)' : 'rgba(255,255,255,0.35)'; ctx.setLineDash([4 * u, 4 * u]); ctx.lineWidth = u; ctx.beginPath(); ctx.arc(cx, cy, W.radius * sc, 0, TAU); ctx.stroke(); ctx.setLineDash([]); }
   if (s && canTrack(s.w)) {
     const lc = lockCandidate();
     if (lc) { const p = w2s(lc.x, lc.y), q = Math.max(9 * u, lc.r * sc * 1.9); ctx.strokeStyle = '#ff5a4f'; ctx.lineWidth = 1.6 * u; ctx.beginPath(); ctx.moveTo(p.x, p.y - q); ctx.lineTo(p.x + q, p.y); ctx.lineTo(p.x, p.y + q); ctx.lineTo(p.x - q, p.y); ctx.closePath(); ctx.stroke(); tag('נעילה', p.x, p.y - q - 8 * u, '#ff5a4f', 10); }
@@ -2451,7 +2655,7 @@ function drawMini() {
   m.beginPath(); m.arc(drone.x, drone.y, drone.D.sensor, 0, TAU); m.stroke();
   m.strokeStyle = 'rgba(255,255,255,0.45)'; m.beginPath(); m.arc(drone.ocx, drone.ocy, drone.orbit, 0, TAU); m.stroke(); m.setLineDash([]);
   const dot = (x, y, r, col) => { m.fillStyle = col; m.beginPath(); m.arc(x, y, r * lw, 0, TAU); m.fill(); };
-  if (M.type === 'strike') for (const t of M.targets) if (!(t.k === 'b' ? t.b.ruined : !t.alive)) { m.strokeStyle = '#ffb347'; m.lineWidth = 2 * lw; m.beginPath(); m.arc(t.intel.x, t.intel.y, t.intel.r, 0, TAU); m.stroke(); }
+  if (M.targets) for (const t of M.targets) if (t.intel && !(t.k === 'b' ? t.b.ruined : !t.alive)) { m.strokeStyle = '#ffb347'; m.lineWidth = 2 * lw; m.beginPath(); m.arc(t.intel.x, t.intel.y, t.intel.r, 0, TAU); m.stroke(); }
   if (M.type === 'rescue') for (const c of M.cands) dot(c.b.x + c.b.w / 2, c.b.y + c.b.h / 2, 4, c.state === 2 ? '#ff5a4f' : c.state === 1 ? '#7a8a80' : '#ffd166');
   for (const sq of squads) {
     if (sq.state === 'move') { m.strokeStyle = 'rgba(92,194,255,0.8)'; m.lineWidth = 2 * lw; m.beginPath(); const p0 = pathAt(sq, sq.prog); m.moveTo(p0.x, p0.y); for (let i = 1; i < sq.pts.length; i++) if (sq.cum[i] > sq.prog) m.lineTo(sq.pts[i].x, sq.pts[i].y); m.stroke(); }
@@ -2496,7 +2700,7 @@ function newCard(type, zone) {
   const r = Math.random, th = S && upv('thermal') > 0, q = r();
   return { type, zone, tod: q < 0.6 ? 'day' : (q < 0.82 || !th) ? 'dusk' : 'night', seed: (r() * 2 ** 31) | 0, name: OPNAMES[Math.floor(r() * OPNAMES.length)] };
 }
-function boardTypes(r) { const t = REGION_TYPES[r].slice(); while (t.length < 3) t.push('strike'); return t.slice(0, 4); }
+function boardTypes(r) { const t = REGION_TYPES[r].slice(); while (t.length < 3) t.push('strike'); return t; }
 function ensureBoard(r) { r = r || S.region; if (!S.boards[r] || !S.boards[r].length) S.boards[r] = boardTypes(r).map(t => newCard(t, r)); }
 function campCard(r) {
   const st = CAMPAIGN[r].stages[S.camp[r]]; if (!st) return null;
@@ -2754,10 +2958,13 @@ UI.help = () => showModal(`<button class="x" onclick="closeModal()" aria-label="
   <li><b>סמן</b> — זיהוי של מה שבכוונת: אדם (מזום x4), רכב או מבנה.</li>
   <li><b>הזז מסלול</b> ואז הקשה על המפה — הרחפן עובר לחוג שם. אפשר גם להקיש על המפה הקטנה.</li>
   <li><b>גובה</b> — בגובה רב מקלעי נ״מ לא מגיעים אליכם, אבל רואים פחות טוב והירי פחות מדויק.</li>
-  <li><b>נוריות</b> — כשמופיע ״טיל באוויר״ לוחצים מיד, כדי להטעות את הטיל.</li></ul>
+  <li><b>נוריות</b> — כשמופיע ״טיל באוויר״ לוחצים מיד, כדי להטעות את הטיל.</li>
+  <li><b>לייזר</b> (אחרי שקונים מסמן לייזר) — כוונו על מטרה ולחצו: טילים ופצצות שתירו יינעלו עליה גם כשהיא בתנועה. לחיצה נוספת מכבה.</li>
+  <li><b>זרזו את הכוח</b> — במשימות עם כוח בתנועה: החיילים רצים כפליים מהר ל־10 שניות, גם תחת אש.</li>
+  <li><b>מקלעים</b> — לחיצה קצרה יורה צרור, החזקה יורה ברצף. באש רציפה הפיזור גדל (העיגול סביב הכוונת).</li></ul>
   <h3>במחשב</h3><ul>
   <li>גרירה בעכבר, WASD או חצים — הזזה. גלגלת או Q/E — זום. לחיצה על המפה — המצלמה עוברת לשם.</li>
-  <li>רווח — ירי · 1–6 — נשק · M — סימון · T — תרמי · F — נוריות · H — גובה · O — הזזת מסלול · B — תקיפת מטוס · P — הפסקה.</li></ul>
+  <li>רווח — ירי · 1–6 — נשק · M — סימון · L — לייזר · G — זירוז הכוח · T — תרמי · F — נוריות · H — גובה · O — הזזת מסלול · B — תקיפת מטוס · P — הפסקה.</li></ul>
   <h3>אזורים ומערכות</h3><ul>
   <li>ארבעה אזורים: עזה, לבנון, תימן ואיראן. בכל אזור מערכה של 5 שלבים, וכל אזור נפתח אחרי 3 שלבים באזור הקודם.</li>
   <li>בשלבי מערכה הקושי קבוע והתגמול גבוה יותר. במשימות הנוספות אתם בוחרים את הקושי.</li>
@@ -2784,6 +2991,7 @@ function showHUD() {
   $('objBox').classList.remove('hidden'); clearTimeout(showHUD.t); showHUD.t = setTimeout(() => $('objBox').classList.add('hidden'), 15000);
   $('thBtn').classList.toggle('on', thermal); $('thBtn').classList.toggle('dis', !upv('thermal'));
   $('flareN').textContent = drone.flares; $('airN').textContent = S.air; $('airBtn').classList.toggle('dis', S.air <= 0);
+  $('laserBtn').classList.toggle('hidden', !upv('laser')); $('laserBtn').classList.remove('on'); $('hurryBtn').classList.add('hidden');
   $('altBtn').textContent = 'גובה: נמוך'; $('altBtn').classList.remove('on'); $('orbitBtn').classList.remove('on'); $('banner').classList.add('hidden');
   renderObjs(); buildWeapRow(); lastTimerTxt = '';
 }
@@ -2812,6 +3020,9 @@ function hudTick() {
   const t = mmss(M.timeLeft);
   if (t !== lastTimerTxt) { $('timer').textContent = t; lastTimerTxt = t; $('timer').classList.toggle('low', M.timeLeft < 30); }
   $('flareBtn').classList.toggle('alert', emiss.length > 0);
+  const moving = squads.some(q => q.state === 'move' && squadLead(q)), hb = $('hurryBtn');
+  hb.classList.toggle('hidden', !moving);
+  if (moving) { const hs = squads.some(q => q.hurry > 0), txt = hs ? 'רצים!' : M.hurryCd > 0 ? `זרזו (${Math.ceil(M.hurryCd)})` : 'זרזו את הכוח'; if (hb.textContent !== txt) hb.textContent = txt; hb.classList.toggle('on', hs); hb.classList.toggle('dis', !hs && M.hurryCd > 0); }
 }
 function radio(text, cls, voice) {
   const box = $('msgs'), now = performance.now();
@@ -2832,6 +3043,23 @@ function toggleAlt() {
   drone.altHigh = !drone.altHigh; $('altBtn').textContent = drone.altHigh ? 'גובה: רב' : 'גובה: נמוך'; $('altBtn').classList.toggle('on', drone.altHigh);
   radio(drone.altHigh ? 'מטפסים לגובה רב — מחוץ לטווח מקלעי נ״מ, אבל התמונה רחוקה יותר' : 'יורדים לגובה נמוך — תמונה חדה וירי מדויק יותר'); SFX.click();
 }
+function toggleLaser() {
+  if (!M || M.over) return;
+  if (!upv('laser')) { radio('אין מסמן לייזר — אפשר לקנות בחנות', 'warn'); return; }
+  if (M.laser) { M.laser = null; radio('הלייזר כובה'); }
+  else {
+    const c = lockCandidate(45); if (!c) { radio('כוונו על מטרה ולחצו ״לייזר״ כדי לסמן אותה', 'warn'); return; }
+    M.laser = c; SFX.lock(); radio(`${label(c)} מסומן בלייזר — טילים ופצצות יינעלו עליו`, 'good');
+  }
+  $('laserBtn').classList.toggle('on', !!M.laser);
+}
+function hurry() {
+  if (!M || M.over) return;
+  const sq = squads.find(q => q.state === 'move' && squadLead(q)); if (!sq) { radio('אין כוח בתנועה', 'warn'); return; }
+  if (M.hurryCd > 0) { radio(`אפשר לזרז שוב בעוד ${Math.ceil(M.hurryCd)} שניות`, 'warn'); return; }
+  sq.hurry = 10; sq.halt = false; sq.push = 10; M.hurryCd = 25; SFX.click();
+  radio(`כוח ׳${sq.name}׳: קיבלנו, רצים!`, 'friend', true);
+}
 function toggleOrbit() {
   orbitMode = !orbitMode; $('orbitBtn').classList.toggle('on', orbitMode);
   const b = $('banner'); b.textContent = 'הקישו על המפה (או על המפה הקטנה) כדי להעביר לשם את מסלול הרחפן'; b.classList.toggle('hidden', !orbitMode); SFX.click();
@@ -2846,7 +3074,7 @@ function bindInput() {
   on('zIn', () => { cam.zt = clamp(cam.zt * 1.6, 1, maxZoom()); });
   on('zOut', () => { cam.zt = clamp(cam.zt / 1.6, 1, maxZoom()); });
   on('thBtn', toggleThermal); on('markBtn', doMark); on('flareBtn', () => deployFlares(false));
-  on('altBtn', toggleAlt); on('orbitBtn', toggleOrbit); on('airBtn', callAir);
+  on('altBtn', toggleAlt); on('orbitBtn', toggleOrbit); on('airBtn', callAir); on('laserBtn', toggleLaser); on('hurryBtn', hurry);
   const fb = $('fireBtn');
   fb.addEventListener('pointerdown', e => { e.preventDefault(); auInit(); if (!M || paused) return; firing = true; fb.classList.add('held'); fire(false); });
   const up = () => { firing = false; fb.classList.remove('held'); };
@@ -2890,7 +3118,7 @@ function bindInput() {
     switch (e.code) {
       case 'Space': e.preventDefault(); if (!e.repeat) { firing = true; fire(false); } break;
       case 'KeyM': doMark(); break; case 'KeyT': toggleThermal(); break; case 'KeyF': deployFlares(false); break;
-      case 'KeyH': toggleAlt(); break; case 'KeyO': toggleOrbit(); break; case 'KeyB': callAir(); break;
+      case 'KeyH': toggleAlt(); break; case 'KeyO': toggleOrbit(); break; case 'KeyB': callAir(); break; case 'KeyL': toggleLaser(); break; case 'KeyG': hurry(); break;
       case 'KeyP': case 'Escape': UI.pause(); break;
       default: if (/^Digit[1-6]$/.test(e.code)) { const i = +e.code.slice(5) - 1; if (loadout[i]) { selW = i; updWeapRow(); } }
     }
