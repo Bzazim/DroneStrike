@@ -1528,7 +1528,7 @@ MIS.cas = {
       best = pts;
     }
     if (!best) { const a = WD.randNode(140), b = WD.randNode(140); best = routePts(WD.route(a, b) || [a, b], 3.2); }
-    const sq = mkSquad(best, 6, 'נמר', 4.6); M.sq = sq; M.focus = { x: best[0].x, y: best[0].y };
+    const sq = mkSquad(best, 6, 'נמר', 7.5); M.sq = sq; M.focus = { x: best[0].x, y: best[0].y };
     const mid = pathAt(sq, sq.total / 2); M.area = mid;
     const k = 2 + M.diff;
     for (let i = 0; i < k; i++) {
@@ -1615,7 +1615,7 @@ MIS.rescue = {
     if (s < 0) s = WD.randNode(60);
     const tn = WD.nodeNear(hc.x, hc.y), r = WD.route(s, tn) || [s, tn], pts = routePts(r, 3.2);
     pts.push(boundaryToward(H, pts[pts.length - 1].x, pts[pts.length - 1].y));
-    const sq = mkSquad(pts, 6, 'ברק', 3.5); M.sq = sq; M.phase = 'approach';
+    const sq = mkSquad(pts, 6, 'ברק', 7); M.sq = sq; M.phase = 'approach';
     const add = (sq.total / sq.spd * 1.6 + 60) * upv('battery'); M.timeLeft += add; M.total += add;
     radio(`נוספו ${Math.round(add)} שניות לליווי הכוח`, 'good');
     sq.onArrive = () => { M.breachWait = true; };
@@ -1651,7 +1651,7 @@ MIS.rescue = {
     M.lz = lz;
     const a = WD.nodeNear(hc.x, hc.y), b = WD.nodeNear(lz.x, lz.y), r = WD.route(a, b) || [a, b];
     const pts = [boundaryToward(H, WD.nodes[a].x, WD.nodes[a].y), ...routePts(r, 3.2), { x: lz.x, y: lz.y }];
-    setSquadPath(sq, pts); sq.spd = 3.2; sq.onArrive = null;
+    setSquadPath(sq, pts); sq.spd = 6; sq.onArrive = null;
     const add = (sq.total / sq.spd * 1.6 + 50) * upv('battery'); M.timeLeft += add; M.total += add;
     sq.mem.forEach(m => { if (m.alive && m.inside) { m.inside = null; m.stay = false; m.x = pts[0].x + rnd(-1, 1); m.y = pts[0].y + rnd(-1, 1); m.st = 'idle'; } });
     for (const h of ents) if (h.side === 'hostage' && h.alive) { h.inside = null; h.stay = false; h.x = pts[0].x + rnd(-1, 1); h.y = pts[0].y + rnd(-1, 1); h.st = 'idle'; sq.hos.push(h); }
